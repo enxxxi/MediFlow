@@ -5,6 +5,7 @@ const {
   createSession,
   updateCaseFromAnswer,
   resumeWorkflow,
+  pauseWorkflow,
 } = require("../agents/workflow.agent");
 
 const {
@@ -66,6 +67,35 @@ router.post("/answer/:sessionId", (req, res) => {
   }
 });
 
+// Pause a workflow session
+router.post("/pause/:sessionId", (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = getSessionById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found",
+      });
+    }
+
+    const pausedSession = pauseWorkflow(session);
+    updateSession(sessionId, pausedSession);
+
+    return res.status(200).json({
+      success: true,
+      message: "Workflow paused successfully",
+      data: pausedSession,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
 // Resume a workflow session
 router.get("/resume/:sessionId", (req, res) => {
   try {
@@ -79,12 +109,13 @@ router.get("/resume/:sessionId", (req, res) => {
       });
     }
 
-    const result = resumeWorkflow(session);
+    const resumedSession = resumeWorkflow(session);
+    updateSession(sessionId, resumedSession);
 
     return res.status(200).json({
       success: true,
       message: "Workflow resumed",
-      data: result,
+      data: resumedSession,
     });
   } catch (error) {
     return res.status(500).json({
