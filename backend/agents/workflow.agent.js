@@ -141,17 +141,30 @@ function resumeWorkflow(session) {
 
   if (session.pending_fields && session.pending_fields.length > 0) {
     return {
-      message: "Session resumed. More information is still needed.",
-      current_step: session.current_step,
+      ...session,
+      current_step: WORKFLOW_STATES.ASKING_FOLLOWUP,
+      updated_at: new Date().toISOString(),
+      resume_message: "Session resumed. More information is still needed.",
       next_question: session.last_question,
-      pending_fields: session.pending_fields,
     };
   }
 
   return {
-    message: "Session resumed. Case is ready for scheduling.",
-    current_step: session.current_step,
-    pending_fields: session.pending_fields,
+    ...session,
+    current_step: WORKFLOW_STATES.READY_FOR_SCHEDULING,
+    updated_at: new Date().toISOString(),
+    resume_message: "Session resumed. Case is ready for scheduling.",
+    next_question: null,
+  };
+}
+
+function pauseWorkflow(session) {
+  if (!session) return null;
+
+  return {
+    ...session,
+    current_step: WORKFLOW_STATES.PAUSED,
+    updated_at: new Date().toISOString(),
   };
 }
 
@@ -162,4 +175,5 @@ module.exports = {
   generateFollowupQuestion,
   updateCaseFromAnswer,
   resumeWorkflow,
+  pauseWorkflow,
 };
