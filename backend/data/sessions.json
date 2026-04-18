@@ -1,0 +1,56 @@
+[
+  {
+    "session_id": "45565f55-345b-4a18-bb63-1dcb4f4768d5",
+    "current_step": "ASKING_FOLLOWUP",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "chest pain"
+      ],
+      "duration": null,
+      "severity": null,
+      "breathing_difficulty": null,
+      "triage_level": "URGENT",
+      "confidence": 0.84
+    },
+    "pending_fields": [
+      "duration",
+      "severity",
+      "breathing_difficulty"
+    ],
+    "question_history": [
+      "How long have you had these symptoms?"
+    ],
+    "last_question": "How long have you had these symptoms?",
+    "last_question_field": "duration"
+  },
+  {
+    "session_id": "cdb6f373-ff8d-4d7c-bfac-9e4df44ccf5e",
+    "current_step": "READY_FOR_SCHEDULING",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "chest pain"
+      ],
+      "duration": "Since yesterday",
+      "severity": "8",
+      "breathing_difficulty": "Yes",
+      "triage_level": "URGENT",
+      "confidence": 0.84
+    },
+    "pending_fields": [],
+    "question_history": [
+      "How long have you had these symptoms?",
+      "How severe is it on a scale from 1 to 10?",
+      "Are you having any difficulty breathing?"
+    ],
+    "last_question": null,
+    "last_question_field": null
+  }
+]
