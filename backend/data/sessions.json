@@ -52,5 +52,130 @@
     ],
     "last_question": null,
     "last_question_field": null
+  },
+  {
+    "session_id": "0b242826-7a4b-4398-9c7a-d9bc65ab4a22",
+    "current_step": "READY_FOR_SCHEDULING",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "chest pain"
+      ],
+      "duration": "breathing difficulty",
+      "severity": "Yes",
+      "breathing_difficulty": "Yes",
+      "triage_level": "URGENT",
+      "confidence": 0.84
+    },
+    "pending_fields": [],
+    "question_history": [
+      "How long have you had chest pain?",
+      "How severe is your chest pain on a scale from 1 to 10?",
+      "Are you having any difficulty breathing?"
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports chest pain since breathing difficulty with severity Yes and breathing difficulty: Yes.",
+    "created_at": "2026-04-18T19:56:03.516Z",
+    "updated_at": "2026-04-18T20:01:26.899Z"
+  },
+  {
+    "session_id": "eaf40567-c419-4f55-9eba-16799f68b94c",
+    "current_step": "ASKING_FOLLOWUP",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "answer": "Since yesterday"
+    },
+    "pending_fields": [
+      "symptoms",
+      "duration",
+      "severity"
+    ],
+    "question_history": [
+      "Please provide symptoms."
+    ],
+    "last_question": "Please provide symptoms.",
+    "last_question_field": "symptoms",
+    "case_summary": null,
+    "created_at": "2026-04-18T19:57:23.305Z",
+    "updated_at": "2026-04-18T19:57:23.305Z"
+  },
+  {
+    "session_id": "5877c428-f28e-427e-bf8c-2f0f3f7e5ce5",
+    "current_step": "ASKING_FOLLOWUP",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "answer": "8"
+    },
+    "pending_fields": [
+      "symptoms",
+      "duration",
+      "severity"
+    ],
+    "question_history": [
+      "Please provide symptoms."
+    ],
+    "last_question": "Please provide symptoms.",
+    "last_question_field": "symptoms",
+    "case_summary": null,
+    "created_at": "2026-04-18T19:57:42.103Z",
+    "updated_at": "2026-04-18T19:57:42.103Z"
+  },
+  {
+    "session_id": "fb857069-8f57-4196-ab64-ae968e470e81",
+    "current_step": "ASKING_FOLLOWUP",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "answer": "8"
+    },
+    "pending_fields": [
+      "symptoms",
+      "duration",
+      "severity"
+    ],
+    "question_history": [
+      "Please provide symptoms."
+    ],
+    "last_question": "Please provide symptoms.",
+    "last_question_field": "symptoms",
+    "case_summary": null,
+    "created_at": "2026-04-18T19:59:35.756Z",
+    "updated_at": "2026-04-18T19:59:35.756Z"
+  },
+  {
+    "session_id": "9149b5d7-1b12-4e08-bc0d-4595329390a8",
+    "current_step": "ASKING_FOLLOWUP",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "answer": "breathing difficulty"
+    },
+    "pending_fields": [
+      "symptoms",
+      "duration",
+      "severity"
+    ],
+    "question_history": [
+      "Please provide symptoms."
+    ],
+    "last_question": "Please provide symptoms.",
+    "last_question_field": "symptoms",
+    "case_summary": null,
+    "created_at": "2026-04-18T20:00:14.070Z",
+    "updated_at": "2026-04-18T20:00:14.070Z"
   }
 ]

@@ -4,6 +4,7 @@ const WORKFLOW_STATES = {
   START: "START",
   INPUT_RECEIVED: "INPUT_RECEIVED",
   TRIAGE_DONE: "TRIAGE_DONE",
+  CHECKING_COMPLETENESS: "CHECKING_COMPLETENESS",
   ASKING_FOLLOWUP: "ASKING_FOLLOWUP",
   READY_FOR_SCHEDULING: "READY_FOR_SCHEDULING",
   COMPLETED: "COMPLETED",
@@ -45,19 +46,28 @@ function findMissingFields(patientCase) {
   });
 }
 
-function generateFollowupQuestion(missingFields) {
+function generateFollowupQuestion(missingFields, patientCase) {
   if (!missingFields || missingFields.length === 0) return null;
 
   const nextField = missingFields[0];
+  const firstSymptom = patientCase?.symptoms?.[0] || "these symptoms";
+
+  const customQuestions = {
+    duration: `How long have you had ${firstSymptom}?`,
+    severity: `How severe is your ${firstSymptom} on a scale from 1 to 10?`,
+    breathing_difficulty: "Are you having any difficulty breathing?",
+    age_group: "Are you an adult, child, or elderly patient?",
+  };
+
   return {
     field: nextField,
-    question: QUESTION_MAP[nextField] || `Please provide ${nextField}.`,
+    question: customQuestions[nextField] || `Please provide ${nextField}.`,
   };
 }
 
 function createSession(patientCase) {
   const missingFields = findMissingFields(patientCase);
-  const followup = generateFollowupQuestion(missingFields);
+  const followup = generateFollowupQuestion(missingFields, patientCase);
 
   return {
     session_id: uuidv4(),
@@ -74,6 +84,10 @@ function createSession(patientCase) {
     question_history: followup ? [followup.question] : [],
     last_question: followup ? followup.question : null,
     last_question_field: followup ? followup.field : null,
+    case_summary:
+      missingFields.length === 0 ? generateCaseSummary(patientCase) : null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 }
 
@@ -88,7 +102,7 @@ function updateCaseFromAnswer(session, answer) {
   };
 
   const missingFields = findMissingFields(updatedPatientCase);
-  const followup = generateFollowupQuestion(missingFields);
+  const followup = generateFollowupQuestion(missingFields, updatedPatientCase);
 
   return {
     ...session,
@@ -103,7 +117,23 @@ function updateCaseFromAnswer(session, answer) {
     question_history: followup
       ? [...session.question_history, followup.question]
       : session.question_history,
+    case_summary:
+      missingFields.length === 0
+        ? generateCaseSummary(updatedPatientCase)
+        : null,
+    updated_at: new Date().toISOString(),
   };
+}
+
+function generateCaseSummary(patientCase) {
+  const symptomsText = patientCase?.symptoms?.join(", ") || "unknown symptoms";
+  const durationText = patientCase?.duration || "unknown duration";
+  const severityText = patientCase?.severity || "unknown severity";
+  const breathingText = patientCase?.breathing_difficulty
+    ? ` and breathing difficulty: ${patientCase.breathing_difficulty}`
+    : "";
+
+  return `Patient reports ${symptomsText} since ${durationText} with severity ${severityText}${breathingText}.`;
 }
 
 function resumeWorkflow(session) {
