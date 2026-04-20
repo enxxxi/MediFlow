@@ -2,13 +2,17 @@ import requests
 import streamlit as st
 import time
 import base64
+from pathlib import Path
 
-def call_understanding_agent(user_text):
+BASE_DIR = Path(__file__).resolve().parent
+ASSETS_DIR = BASE_DIR / "assets"
+
+def call_understanding_agent(user_input):
     try:
-        # This sends data to Node.js server
+        # Changed port to 5000 and path to /api/agent/understand-input
         response = requests.post(
-            "http://localhost:3000/api/understand-input", 
-            json={"text": user_text}
+            "http://localhost:5000/api/agent/understand-input", 
+            json={"text": user_input}
         )
         return response.json()
     except Exception as e:
@@ -70,13 +74,13 @@ def set_bg(image_file):
     """, unsafe_allow_html=True)
 
 BG_MAP = {
-    "home": "assets/bg_home.png",
-    "triage": "assets/bg_chat.png",
-    "result": "assets/bg_result.png",
-    "booking": "assets/bg_booking.png",
-    "confirm": "assets/bg_confirm.png",
-    "appointments": "assets/bg_appointment.png",
-    "emergency": "assets/bg_emergency.png"
+    "home": ASSETS_DIR / "bg_home.png",
+    "triage": ASSETS_DIR / "bg_chat.png",
+    "result": ASSETS_DIR / "bg_result.png",
+    "booking": ASSETS_DIR / "bg_booking.png",
+    "confirm": ASSETS_DIR / "bg_confirm.png",
+    "appointments": ASSETS_DIR / "bg_appointment.png",
+    "emergency": ASSETS_DIR / "bg_emergency.png"
 }
 
 # ---------------- SESSION STATE ----------------
@@ -158,42 +162,71 @@ def triage():
 
     st.markdown("<h1 style='color:white; font-family: Roboto;'>💬 Medical Chat</h1>", unsafe_allow_html=True)
 
+    # Display Chat History
     for msg in st.session_state.chat:
         align = "right" if msg["role"] == "User" else "left"
         color = "#bde4ff" if msg["role"] == "User" else "#d0ffe6"
         st.markdown(f"""
-        <div style='text-align:{align};background:{color};padding:10px;border-radius:10px;margin:5px'>
+        <div style='text-align:{align};background:{color};padding:10px;border-radius:10px;margin:5px; color:black;'>
         {msg["text"]}
         </div>
         """, unsafe_allow_html=True)
 
-    col1, col2 = st.columns ([9,1], vertical_alignment="bottom")
+    col1, col2 = st.columns([9,1], vertical_alignment="bottom")
     with col1:
-        user_input = st.text_input("", placeholder="Describe your symptoms...")
+        user_input = st.text_input("", placeholder="Describe your symptoms...", key="user_input_box")
     with col2:
-        st.button("🎤 Speak")   # voice input
+        st.button("🎤")
 
-    # fake AI analysis
+    # REAL Z.AI ANALYSIS
     if st.button("Send") and user_input:
+        # 1. Save user message to history
         st.session_state.chat.append({"role": "User", "text": user_input})
-        st.markdown("""
-            <p style='font-family: Cambria;font-size: 18px;color: #ffffff;text-align: left;'
-                >🧠 MediFlow is analyzing your symptoms...</p>
-        """, unsafe_allow_html=True)
-        time.sleep(2)
+        
+        # 2. Call the Z.AI Agent (Backend)
+        with st.status("🧠 Z.AI GLM is analyzing symptoms...", expanded=False) as status:
+            structured_data = call_understanding_agent(user_input)
+            
+            if "error" in structured_data:
+                status.update(label="Analysis Failed", state="error")
+                st.error("Could not connect to Z.AI. Please check if the Node.js server is running.")
+            else:
+                status.update(label="Analysis Complete", state="complete")
+                
+                # 3. Process the REAL JSON data
+                severity = structured_data.get("severity", "low").lower()
+                intent = structured_data.get("intent", "").lower()
+                symptoms = ", ".join(structured_data.get("symptoms", ["unknown"]))
 
-        if "chest" in user_input.lower():
-            st.session_state.triage = {"level":"EMERGENCY","color":"#F5B7B1","msg":"Possible cardiac issue","confidence":"92%"}
-            ai_msg = "Immediate care needed."
-        elif "fever" in user_input.lower():
-            st.session_state.triage = {"level":"NON-URGENT","color":"#ABEBC6","msg":"Likely mild infection","confidence":"75%"}
-            ai_msg = "You can book a consultation."
-        else:
-            st.session_state.triage = {"level":"URGENT","color":"#F9E79F","msg":"Needs medical attention","confidence":"85%"}
-            ai_msg = "You should see a doctor soon."
+                # 4. Map data to your Triage UI
+                if severity in ["high", "critical"] or intent == "emergency":
+                    st.session_state.triage = {
+                        "level": "EMERGENCY",
+                        "color": "#F5B7B1",
+                        "msg": f"Critical: {symptoms} detected.",
+                        "confidence": "AI Verified"
+                    }
+                    ai_msg = "🚨 This looks serious. I am directing you to Emergency services."
+                elif severity == "moderate":
+                    st.session_state.triage = {
+                        "level": "URGENT",
+                        "color": "#F9E79F",
+                        "msg": f"Detected: {symptoms}.",
+                        "confidence": "AI Verified"
+                    }
+                    ai_msg = "I've analyzed your symptoms. You should see a doctor soon."
+                else:
+                    st.session_state.triage = {
+                        "level": "NON-URGENT",
+                        "color": "#ABEBC6",
+                        "msg": "Symptoms appear mild.",
+                        "confidence": "AI Verified"
+                    }
+                    ai_msg = "Based on our analysis, you can proceed to book a standard appointment."
 
-        st.session_state.chat.append({"role": "AI", "text": ai_msg})
-        go("result")
+                # 5. Save AI response and go to result page
+                st.session_state.chat.append({"role": "AI", "text": ai_msg})
+                go("result")
 
 # ---------------- RESULT ----------------
 def result():
