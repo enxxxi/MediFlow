@@ -1,6 +1,18 @@
+import requests
 import streamlit as st
 import time
 import base64
+
+def call_understanding_agent(user_text):
+    try:
+        # This sends data to Node.js server
+        response = requests.post(
+            "http://localhost:3000/api/understand-input", 
+            json={"text": user_text}
+        )
+        return response.json()
+    except Exception as e:
+        return {"error": str(e)}
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="MediFlow", page_icon="🩺", layout="wide")
