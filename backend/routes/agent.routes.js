@@ -1,11 +1,23 @@
-const express = require('express');
-const router = express.Router();
-const { processMedicalInput } = require('../agents/inputUnderstanding.agent.js');
+import express from "express";
+import { processMedicalInput } from "../agents/inputUnderstanding.agent.js";
 
-router.post('/understand-input', async (req, res) => {
+const router = express.Router();
+
+router.post("/understand-input", async (req, res) => {
+  try {
     const { text } = req.body;
     const result = await processMedicalInput(text);
     res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to process medical input",
+      details: error.message
+    });
+  }
 });
 
-module.exports = router;
+router.post("/schedule", (req, res) => {
+  res.json({ message: "OK" });
+});
+
+export default router;

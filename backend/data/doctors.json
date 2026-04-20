@@ -1,0 +1,14 @@
+{
+  "Cardiology": [
+    {
+      "name": "Dr. Lim",
+      "slots": ["10:00", "11:00", "14:00"]
+    }
+  ],
+  "General Medicine": [
+    {
+      "name": "Dr. Ali",
+      "slots": ["09:00", "13:00"]
+    }
+  ]
+}

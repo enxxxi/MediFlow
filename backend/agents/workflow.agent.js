@@ -1,6 +1,6 @@
-const { v4: uuidv4 } = require("uuid");
+import { v4 as uuidv4 } from "uuid";
 
-const WORKFLOW_STATES = {
+export const WORKFLOW_STATES = {
   START: "START",
   INPUT_RECEIVED: "INPUT_RECEIVED",
   TRIAGE_DONE: "TRIAGE_DONE",
@@ -11,14 +11,14 @@ const WORKFLOW_STATES = {
   PAUSED: "PAUSED",
 };
 
-const QUESTION_MAP = {
+export const QUESTION_MAP = {
   duration: "How long have you had these symptoms?",
   severity: "How severe is it on a scale from 1 to 10?",
   breathing_difficulty: "Are you having any difficulty breathing?",
   age_group: "Are you an adult, child, or elderly patient?",
 };
 
-function getRequiredFields(patientCase) {
+export function getRequiredFields(patientCase) {
   const symptoms = patientCase.symptoms || [];
 
   if (symptoms.includes("chest pain")) {
@@ -32,7 +32,7 @@ function getRequiredFields(patientCase) {
   return ["symptoms", "duration", "severity"];
 }
 
-function findMissingFields(patientCase) {
+export function findMissingFields(patientCase) {
   const requiredFields = getRequiredFields(patientCase);
 
   return requiredFields.filter((field) => {
@@ -46,7 +46,7 @@ function findMissingFields(patientCase) {
   });
 }
 
-function generateFollowupQuestion(missingFields, patientCase) {
+export function generateFollowupQuestion(missingFields, patientCase) {
   if (!missingFields || missingFields.length === 0) return null;
 
   const nextField = missingFields[0];
@@ -65,7 +65,7 @@ function generateFollowupQuestion(missingFields, patientCase) {
   };
 }
 
-function createSession(patientCase) {
+export function createSession(patientCase) {
   const missingFields = findMissingFields(patientCase);
   const followup = generateFollowupQuestion(missingFields, patientCase);
 
@@ -91,7 +91,7 @@ function createSession(patientCase) {
   };
 }
 
-function updateCaseFromAnswer(session, answer) {
+export function updateCaseFromAnswer(session, answer) {
   const field = session.last_question_field;
 
   if (!field) return session;
@@ -125,10 +125,12 @@ function updateCaseFromAnswer(session, answer) {
   };
 }
 
-function generateCaseSummary(patientCase) {
-  const symptomsText = patientCase?.symptoms?.join(", ") || "unknown symptoms";
+export function generateCaseSummary(patientCase) {
+  const symptomsText =
+    patientCase?.symptoms?.join(", ") || "unknown symptoms";
   const durationText = patientCase?.duration || "unknown duration";
   const severityText = patientCase?.severity || "unknown severity";
+
   const breathingText = patientCase?.breathing_difficulty
     ? ` and breathing difficulty: ${patientCase.breathing_difficulty}`
     : "";
@@ -136,7 +138,7 @@ function generateCaseSummary(patientCase) {
   return `Patient reports ${symptomsText} since ${durationText} with severity ${severityText}${breathingText}.`;
 }
 
-function resumeWorkflow(session) {
+export function resumeWorkflow(session) {
   if (!session) return null;
 
   if (session.pending_fields && session.pending_fields.length > 0) {
@@ -158,7 +160,7 @@ function resumeWorkflow(session) {
   };
 }
 
-function pauseWorkflow(session) {
+export function pauseWorkflow(session) {
   if (!session) return null;
 
   return {
@@ -167,13 +169,3 @@ function pauseWorkflow(session) {
     updated_at: new Date().toISOString(),
   };
 }
-
-module.exports = {
-  WORKFLOW_STATES,
-  createSession,
-  findMissingFields,
-  generateFollowupQuestion,
-  updateCaseFromAnswer,
-  resumeWorkflow,
-  pauseWorkflow,
-};

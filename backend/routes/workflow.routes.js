@@ -1,19 +1,19 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
 
-const {
+import {
   createSession,
   updateCaseFromAnswer,
   resumeWorkflow,
   pauseWorkflow,
-} = require("../agents/workflow.agent");
+} from "../agents/workflow.agent.js";
 
-const {
+import {
   getSessionById,
   saveSession,
   updateSession,
   getAllSessions,
-} = require("../services/session.service");
+} from "../services/session.service.js";
 
 // Start a workflow session
 router.post("/start", (req, res) => {
@@ -142,4 +142,4 @@ router.get("/all", (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

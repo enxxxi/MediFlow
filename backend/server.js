@@ -1,18 +1,22 @@
-const express = require("express");
-const cors = require("cors");
-const workflowRoutes = require("./routes/workflow.routes");
-const agentRoutes = require("./routes/agent.routes");
+import express from "express";
+import workflowRoutes from "./routes/workflow.routes.js";
+import agentRoutes from "./routes/agent.routes.js";
+
 const app = express();
 
-app.use(cors());
 app.use(express.json());
-app.use("/api/workflow", workflowRoutes);
-app.use("/api/agent", agentRoutes);
 
+// routes
+app.use("/workflow", workflowRoutes);
+app.use("/agent", agentRoutes);
+
+// health check
 app.get("/", (req, res) => {
-    res.send("MediFlow backend running");
+  res.json({ message: "MediFlow backend running" });
 });
 
-app.listen(5000, () => {
-    console.log("Server running on port 5000");
+const PORT = 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
