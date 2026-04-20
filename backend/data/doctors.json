@@ -1,14 +1,12 @@
 {
   "Cardiology": [
-    {
-      "name": "Dr. Lim",
-      "slots": ["10:00", "11:00", "14:00"]
-    }
+    { "name": "Dr Lim", "priority": 1 },
+    { "name": "Dr Tan", "priority": 2 }
   ],
-  "General Medicine": [
-    {
-      "name": "Dr. Ali",
-      "slots": ["09:00", "13:00"]
-    }
+  "General": [
+    { "name": "Dr Wong", "priority": 1 }
+  ],
+  "Emergency": [
+    { "name": "Dr Lee", "priority": 1 }
   ]
 }
