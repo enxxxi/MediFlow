@@ -1,5 +1,6 @@
 import express from "express";
 const router = express.Router();
+import { scheduleAppointment } from "../services/scheduling.service.js";
 
 import {
   createSession,
@@ -138,6 +139,46 @@ router.get("/all", (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+});
+
+router.post("/finalize/:sessionId", (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = getSessionById(sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Session not found",
+      });
+    }
+
+    // ONLY run if ready
+    if (session.current_step !== "READY_FOR_SCHEDULING") {
+      return res.status(400).json({
+        success: false,
+        message: "Session not ready for scheduling",
+      });
+    }
+
+    const result = scheduleAppointment(session.patient_case);
+
+    return res.json({
+      success: true,
+      message: "Appointment scheduled successfully",
+      data: {
+        session_id: sessionId,
+        ...result
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 });

@@ -1,0 +1,8 @@
+{
+  "chest pain": "Cardiology",
+  "heart pain": "Cardiology",
+  "fever": "General",
+  "headache": "General",
+  "accident": "Emergency",
+  "bleeding": "Emergency"
+}

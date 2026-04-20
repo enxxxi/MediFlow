@@ -1,39 +1,55 @@
-import doctors from "../data/doctors.json" with { type: "json" };
-import symptomMap from "../data/symptom_map.json" with { type: "json" };
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// 1. Get department from symptoms
-function getDepartment(symptoms) {
-  for (let symptom of symptoms) {
-    if (symptomMap[symptom]) {
-      return symptomMap[symptom];
+// fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// load JSON manually
+function loadJSON(fileName) {
+  const filePath = path.join(__dirname, `../data/${fileName}`);
+  const data = fs.readFileSync(filePath, "utf-8");
+  return JSON.parse(data);
+}
+
+// load datasets
+const doctors = loadJSON("doctors.json");
+const slots = loadJSON("slots.json");
+const deptRules = loadJSON("departmentRules.json");
+
+// map symptoms → department
+function getDepartment(symptoms = []) {
+  for (const symptom of symptoms) {
+    if (deptRules[symptom]) {
+      return deptRules[symptom];
     }
   }
-  return "General Medicine";
+  return "General";
 }
 
-// 2. Pick doctor
-function getDoctor(department) {
-  return doctors[department][0]; // simple version
+// urgency → priority
+function getPriority(triage_level) {
+  if (triage_level === "Emergency") return 1;
+  if (triage_level === "Urgent") return 2;
+  return 3;
 }
 
-// 3. Get slot
-function getSlot(doctor) {
-  return doctor.slots[0]; // earliest slot
-}
+// main scheduling function
+export function scheduleAppointment(patientCase) {
+  const department = getDepartment(patientCase.symptoms);
+  const doctorList = doctors[department] || doctors["General"];
 
-// MAIN FUNCTION
-export function createAppointment(data) {
-  const department = getDepartment(data.symptoms);
-  const doctor = getDoctor(department);
-  const slot = getSlot(doctor);
+  const doctor = [...doctorList].sort((a, b) => a.priority - b.priority)[0];
+
+  const availableSlots = slots[doctor.name] || [];
+  const assignedSlot = availableSlots.length > 0 ? availableSlots[0] : "TBD";
 
   return {
-    status: "confirmed",
     department,
     doctor: doctor.name,
-    appointment_time: slot,
-    triage_level: data.triage_level,
-    risk_score: data.risk_score,
-    message: "Appointment scheduled successfully"
+    time: assignedSlot,
+    priority_level: getPriority(patientCase.triage_level),
+    status: "confirmed"
   };
 }

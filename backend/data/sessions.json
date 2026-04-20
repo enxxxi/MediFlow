@@ -210,5 +210,92 @@
     "updated_at": "2026-04-18T20:08:15.367Z",
     "resume_message": "Session resumed. More information is still needed.",
     "next_question": "How long have you had chest pain?"
+  },
+  {
+    "session_id": "76a666c9-1eba-4c62-8c7a-aea074b62ba8",
+    "current_step": "READY_FOR_SCHEDULING",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "chest pain"
+      ],
+      "duration": "2 days",
+      "severity_clues": "worsening",
+      "patient_types": "adult",
+      "triage_level": "Urgent",
+      "confidence": 0.9,
+      "risk_score": 0.85,
+      "reasoning": "possible cardiac issue",
+      "needs_followup": true,
+      "severity": "8",
+      "breathing_difficulty": "no"
+    },
+    "pending_fields": [],
+    "question_history": [
+      "How severe is your chest pain on a scale from 1 to 10?",
+      "Are you having any difficulty breathing?"
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports chest pain since 2 days with severity 8 and breathing difficulty: no.",
+    "created_at": "2026-04-20T16:55:34.789Z",
+    "updated_at": "2026-04-20T17:19:48.582Z"
+  },
+  {
+    "session_id": "bf725556-cf0c-412a-b488-6589787d9b1b",
+    "current_step": "READY_FOR_SCHEDULING",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "chest pain"
+      ],
+      "duration": "2 days",
+      "severity": "7",
+      "breathing_difficulty": "no"
+    },
+    "pending_fields": [],
+    "question_history": [
+      "How severe is your chest pain on a scale from 1 to 10?",
+      "Are you having any difficulty breathing?"
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports chest pain since 2 days with severity 7 and breathing difficulty: no.",
+    "created_at": "2026-04-20T17:49:52.034Z",
+    "updated_at": "2026-04-20T17:51:26.612Z"
+  },
+  {
+    "session_id": "cd288683-d55f-4506-96b2-cbce04969b82",
+    "current_step": "ASKING_FOLLOWUP",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "chest pain"
+      ],
+      "duration": "2 days",
+      "severity_clues": "worsening",
+      "patient_types": "adult"
+    },
+    "pending_fields": [
+      "severity",
+      "breathing_difficulty"
+    ],
+    "question_history": [
+      "How severe is your chest pain on a scale from 1 to 10?"
+    ],
+    "last_question": "How severe is your chest pain on a scale from 1 to 10?",
+    "last_question_field": "severity",
+    "case_summary": null,
+    "created_at": "2026-04-20T18:39:44.431Z",
+    "updated_at": "2026-04-20T18:39:44.431Z"
   }
 ]
