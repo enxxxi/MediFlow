@@ -1,9 +1,13 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const sessionsFile = path.join(__dirname, "../data/sessions.json");
 
-function readSessions() {
+export function readSessions() {
   try {
     const data = fs.readFileSync(sessionsFile, "utf-8");
     return JSON.parse(data || "[]");
@@ -12,29 +16,31 @@ function readSessions() {
   }
 }
 
-function writeSessions(sessions) {
+export function writeSessions(sessions) {
   fs.writeFileSync(sessionsFile, JSON.stringify(sessions, null, 2));
 }
 
-function getAllSessions() {
+export function getAllSessions() {
   return readSessions();
 }
 
-function getSessionById(sessionId) {
+export function getSessionById(sessionId) {
   const sessions = readSessions();
   return sessions.find((session) => session.session_id === sessionId);
 }
 
-function saveSession(newSession) {
+export function saveSession(newSession) {
   const sessions = readSessions();
   sessions.push(newSession);
   writeSessions(sessions);
   return newSession;
 }
 
-function updateSession(sessionId, updatedData) {
+export function updateSession(sessionId, updatedData) {
   const sessions = readSessions();
-  const index = sessions.findIndex((session) => session.session_id === sessionId);
+  const index = sessions.findIndex(
+    (session) => session.session_id === sessionId
+  );
 
   if (index === -1) return null;
 
@@ -46,10 +52,3 @@ function updateSession(sessionId, updatedData) {
   writeSessions(sessions);
   return sessions[index];
 }
-
-module.exports = {
-  getAllSessions,
-  getSessionById,
-  saveSession,
-  updateSession,
-};
