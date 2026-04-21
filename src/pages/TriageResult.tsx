@@ -63,7 +63,7 @@ export default function TriageResult() {
                 className="flex items-center justify-center gap-2 py-3.5 rounded-xl gradient-emergency text-emergency-foreground font-semibold shadow-glow-emergency">
                 <ShieldAlert className="w-5 h-5" /> Emergency Actions
               </button>
-              <a href="tel:911" className="flex items-center justify-center gap-2 py-3.5 rounded-xl border-2 border-emergency text-emergency font-semibold">
+              <a href="tel:999" className="flex items-center justify-center gap-2 py-3.5 rounded-xl border-2 border-emergency text-emergency font-semibold">
                 <Phone className="w-4 h-4" /> Call Emergency Services
               </a>
             </>
