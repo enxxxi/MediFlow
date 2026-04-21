@@ -7,6 +7,26 @@ import { useApp } from '@/context/AppContext';
 import { simulateTriageAnalysis } from '@/lib/mock-data';
 import { toast } from 'sonner';
 
+const handleSymptomAnalysis = async (userInput: string) => {
+    try {
+        const response = await fetch("http://localhost:5000/api/agent/understand-input", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ text: userInput }),
+        });
+
+        if (!response.ok) throw new Error("Failed to connect to backend");
+
+        const structuredData = await response.json();
+        return structuredData;
+    } catch (error) {
+        console.error("Error calling agent:", error);
+        return { error: "Could not analyze symptoms" };
+    }
+};
+
 const followUpQuestions = [
   'How severe is your pain on a scale of 1–10?',
   'How long have you had these symptoms?',
@@ -78,13 +98,23 @@ export default function Triage() {
     recognition.start();
   };
 
-  const handleSubmit = () => {
-    if (!symptomInput.trim()) return;
-    recognitionRef.current?.stop();
-    setIsListening(false);
-    setStep('analyzing');
-    setTimeout(() => {
-      const result = simulateTriageAnalysis(symptomInput);
+  const handleSubmit = async () => {
+      if (!symptomInput.trim()) return;
+      
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      setStep('analyzing');
+
+      // --- CALL REAL BACKEND AGENT ---
+      const result = await handleSymptomAnalysis(symptomInput);
+
+      if (result.error) {
+        toast.error("Backend error: Make sure Node.js is running.");
+        setStep('input');
+        return;
+      }
+
+      // Logic: If AI is unsure (confidence below 85), go to follow-up
       if (result.confidenceScore < 85) {
         setStep('followup');
       } else {
@@ -92,25 +122,34 @@ export default function Triage() {
         setStep('done');
         setTimeout(() => navigate('/triage-result'), 500);
       }
-    }, 2000);
-  };
+    };
 
-  const handleFollowUp = () => {
-    const newAnswers = [...followUpAnswers, currentAnswer];
-    setFollowUpAnswers(newAnswers);
-    setCurrentAnswer('');
-    if (followUpIndex < followUpQuestions.length - 1) {
-      setFollowUpIndex(i => i + 1);
-    } else {
-      setStep('analyzing');
-      setTimeout(() => {
-        const result = simulateTriageAnalysis(symptomInput + ' ' + newAnswers.join(' '));
-        setTriageResult(result);
-        setStep('done');
-        setTimeout(() => navigate('/triage-result'), 500);
-      }, 1500);
-    }
-  };
+  const handleFollowUp = async () => {
+      const newAnswers = [...followUpAnswers, currentAnswer];
+      setFollowUpAnswers(newAnswers);
+      setCurrentAnswer('');
+
+      if (followUpIndex < followUpQuestions.length - 1) {
+        setFollowUpIndex(i => i + 1);
+      } else {
+        setStep('analyzing');
+        
+        // Combine the original input with the new detailed answers
+        const combinedInput = `${symptomInput}. Additional details: ${newAnswers.join(' ')}`;
+        
+        // --- CALL REAL BACKEND AGENT AGAIN ---
+        const finalResult = await handleSymptomAnalysis(combinedInput);
+
+        if (finalResult.error) {
+          toast.error("Analysis failed. Please try again.");
+          setStep('input');
+        } else {
+          setTriageResult(finalResult);
+          setStep('done');
+          setTimeout(() => navigate('/triage-result'), 500);
+        }
+      }
+    };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -151,7 +190,10 @@ export default function Triage() {
               </div>
 
               <div className="flex gap-3 mt-4">
-                <button onClick={toggleVoiceInput}
+                <button
+                  onClick={toggleVoiceInput}
+                  aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
+                  title={isListening ? 'Stop voice input' : 'Start voice input'}
                   className={`p-3 rounded-xl transition-all ${
                     isListening
                       ? 'bg-emergency/10 text-emergency border border-emergency/20 shadow-glow-emergency'
@@ -200,7 +242,11 @@ export default function Triage() {
                   placeholder="Your answer..."
                   className="flex-1 rounded-xl border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
-                <button onClick={handleFollowUp} disabled={!currentAnswer.trim()}
+                <button
+                  onClick={handleFollowUp}
+                  disabled={!currentAnswer.trim()}
+                  aria-label="Submit follow-up answer"
+                  title="Submit follow-up answer"
                   className="px-4 rounded-xl gradient-primary text-primary-foreground font-semibold disabled:opacity-40">
                   <Send className="w-4 h-4" />
                 </button>
