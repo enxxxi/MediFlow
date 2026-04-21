@@ -17,8 +17,8 @@ export default function Landing() {
           <div className="absolute bottom-12 left-6 w-20 h-20 rounded-full border border-primary-foreground/20 animate-float" />
         </div>
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10">
-          <div className="flex items-center gap-2 mb-6">
-            <img src="/favicon.png" alt="MediFlow" className="w-7 h-7 rounded" />
+          <div className="flex items-center gap-3 mb-6">
+            <img src="/favicon.png" alt="MediFlow" className="w-12 h-12 rounded-lg" />
             <span className="text-lg font-bold text-primary-foreground tracking-tight">MediFlow</span>
           </div>
           <h1 className="text-3xl font-extrabold text-primary-foreground leading-tight">
