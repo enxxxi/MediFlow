@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Stethoscope, CalendarDays, AlertTriangle, Activity } from 'lucide-react';
+import { Stethoscope, CalendarDays, AlertTriangle } from 'lucide-react';
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.1 } } };
 const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
@@ -18,7 +18,7 @@ export default function Landing() {
         </div>
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10">
           <div className="flex items-center gap-2 mb-6">
-            <Activity className="w-7 h-7 text-primary-foreground" />
+            <img src="/favicon.png" alt="MediFlow" className="w-7 h-7 rounded" />
             <span className="text-lg font-bold text-primary-foreground tracking-tight">MediFlow</span>
           </div>
           <h1 className="text-3xl font-extrabold text-primary-foreground leading-tight">
