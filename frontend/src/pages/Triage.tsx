@@ -1,259 +1,292 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, MicOff, Loader2, Brain } from 'lucide-react';
-import { PageHeader } from '@/components/PageHeader';
-import { useApp } from '@/context/AppContext';
-import { simulateTriageAnalysis } from '@/lib/mock-data';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { ArrowLeft, Send, Stethoscope } from "lucide-react";
 
-const handleSymptomAnalysis = async (userInput: string) => {
-    try {
-        const response = await fetch("http://localhost:5000/api/agent/understand-input", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ text: userInput }),
-        });
-
-        if (!response.ok) throw new Error("Failed to connect to backend");
-
-        const structuredData = await response.json();
-        return structuredData;
-    } catch (error) {
-        console.error("Error calling agent:", error);
-        return { error: "Could not analyze symptoms" };
-    }
+type WorkflowResponse = {
+  success: boolean;
+  message: string;
+  data?: {
+    session_id: string;
+    current_step: string;
+    completed_steps: string[];
+    patient_case: Record<string, unknown>;
+    pending_fields: string[];
+    question_history: Array<{
+      field: string;
+      question: string;
+      answer: string | number | null;
+      asked_at: string;
+      answered_at: string | null;
+    }>;
+    last_question: string | null;
+    last_question_field: string | null;
+    case_summary: string | null;
+    validation_error?: string | null;
+    resume_message?: string | null;
+    next_question?: string | null;
+  };
 };
-
-const followUpQuestions = [
-  'How severe is your pain on a scale of 1–10?',
-  'How long have you had these symptoms?',
-  'Any difficulty breathing?',
-];
-
-// Browser Speech Recognition setup
-const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
 export default function Triage() {
   const navigate = useNavigate();
-  const { setTriageResult, symptomInput, setSymptomInput } = useApp();
-  const [step, setStep] = useState<'input' | 'analyzing' | 'followup' | 'done'>('input');
-  const [followUpIndex, setFollowUpIndex] = useState(0);
-  const [followUpAnswers, setFollowUpAnswers] = useState<string[]>([]);
-  const [currentAnswer, setCurrentAnswer] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
 
-  const toggleVoiceInput = () => {
-    if (!SpeechRecognition) {
-      toast.error('Speech recognition is not supported in your browser. Try Chrome or Edge.');
+  const [symptomInput, setSymptomInput] = useState("");
+  const [answerInput, setAnswerInput] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
+  const [workflowData, setWorkflowData] = useState<WorkflowResponse["data"] | null>(null);
+
+  const [uiStep, setUiStep] = useState<"input" | "analyzing" | "followup">("input");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const API_BASE = "http://localhost:5000/api/workflow";
+
+  const startWorkflow = async () => {
+    if (!symptomInput.trim()) {
+      setErrorMessage("Please enter your symptoms first.");
       return;
     }
 
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
+    try {
+      setLoading(true);
+      setErrorMessage("");
+      setUiStep("analyzing");
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = true;
-    recognition.continuous = true;
-    recognitionRef.current = recognition;
+      const response = await fetch(`${API_BASE}/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          symptoms: [symptomInput.trim().toLowerCase()],
+          triage_level: "URGENT",
+        }),
+      });
 
-    let finalTranscript = symptomInput;
+      const data: WorkflowResponse = await response.json();
 
-    recognition.onstart = () => setIsListening(true);
-
-    recognition.onresult = (event: any) => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += (finalTranscript ? ' ' : '') + transcript;
-        } else {
-          interim = transcript;
-        }
-      }
-      setSymptomInput(finalTranscript + (interim ? ' ' + interim : ''));
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      if (event.error === 'not-allowed') {
-        toast.error('Microphone access denied. Please allow microphone permission and try again.');
-      } else {
-        toast.error(`Voice input error: ${event.error}`);
-      }
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognition.start();
-  };
-
-  const handleSubmit = async () => {
-      if (!symptomInput.trim()) return;
-      
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      setStep('analyzing');
-
-      // --- CALL REAL BACKEND AGENT ---
-      const result = await handleSymptomAnalysis(symptomInput);
-
-      if (result.error) {
-        toast.error("Backend error: Make sure Node.js is running.");
-        setStep('input');
+      if (!data.success || !data.data) {
+        setErrorMessage(data.message || "Failed to start workflow.");
+        setUiStep("input");
         return;
       }
 
-      // Logic: If AI is unsure (confidence below 85), go to follow-up
-      if (result.confidenceScore < 85) {
-        setStep('followup');
-      } else {
-        setTriageResult(result);
-        setStep('done');
-        setTimeout(() => navigate('/triage-result'), 500);
+      setSessionId(data.data.session_id);
+      setWorkflowData(data.data);
+      setCurrentQuestion(data.data.last_question);
+      setUiStep("followup");
+    } catch (error) {
+      setErrorMessage("Unable to connect to backend.");
+      setUiStep("input");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendAnswer = async () => {
+    if (!sessionId) {
+      setErrorMessage("Session not found. Please start again.");
+      return;
+    }
+
+    if (!answerInput.trim()) {
+      setErrorMessage("Please enter your answer.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setErrorMessage("");
+
+      const response = await fetch(`${API_BASE}/answer/${sessionId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          answer: answerInput.trim(),
+        }),
+      });
+
+      const data: WorkflowResponse = await response.json();
+
+      if (!data.success && data.data) {
+        setWorkflowData(data.data);
+        setCurrentQuestion(data.data.last_question || data.data.next_question || null);
+        setErrorMessage(data.message || data.data.validation_error || "Invalid input.");
+        return;
       }
-    };
 
-  const handleFollowUp = async () => {
-      const newAnswers = [...followUpAnswers, currentAnswer];
-      setFollowUpAnswers(newAnswers);
-      setCurrentAnswer('');
-
-      if (followUpIndex < followUpQuestions.length - 1) {
-        setFollowUpIndex(i => i + 1);
-      } else {
-        setStep('analyzing');
-        
-        // Combine the original input with the new detailed answers
-        const combinedInput = `${symptomInput}. Additional details: ${newAnswers.join(' ')}`;
-        
-        // --- CALL REAL BACKEND AGENT AGAIN ---
-        const finalResult = await handleSymptomAnalysis(combinedInput);
-
-        if (finalResult.error) {
-          toast.error("Analysis failed. Please try again.");
-          setStep('input');
-        } else {
-          setTriageResult(finalResult);
-          setStep('done');
-          setTimeout(() => navigate('/triage-result'), 500);
-        }
+      if (!data.success || !data.data) {
+        setErrorMessage(data.message || "Failed to submit answer.");
+        return;
       }
-    };
+
+      setWorkflowData(data.data);
+      setAnswerInput("");
+
+      if (data.data.current_step === "ASKING_FOLLOWUP") {
+        setCurrentQuestion(data.data.last_question || data.data.next_question || null);
+        return;
+      }
+
+      if (data.data.current_step === "READY_FOR_SCHEDULING") {
+        navigate("/triage-result", {
+          state: {
+            sessionId: data.data.session_id,
+            workflow: data.data,
+          },
+        });
+      }
+    } catch (error) {
+      setErrorMessage("Unable to connect to backend.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePrimaryAction = async () => {
+    if (uiStep === "input") {
+      await startWorkflow();
+    } else if (uiStep === "followup") {
+      await sendAnswer();
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <PageHeader title="Symptom Check" subtitle="Describe what you're feeling" />
+    <div className="min-h-screen bg-slate-950 text-white px-4 py-8">
+      <div className="mx-auto max-w-3xl">
+        <button
+          onClick={() => navigate(-1)}
+          className="mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-white/80 hover:bg-white/5"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
 
-      <div className="flex-1 px-5 pb-6 flex flex-col">
-        <AnimatePresence mode="wait">
-          {step === 'input' && (
-            <motion.div key="input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col">
-              <div className="flex-1 flex flex-col gap-4">
-                <div className="bg-card rounded-2xl shadow-card p-4">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Examples you can try:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {['Fever and cough for 3 days', 'Sharp chest pain', 'Persistent headache'].map(ex => (
-                      <button key={ex} onClick={() => setSymptomInput(ex)}
-                        className="text-xs px-3 py-1.5 rounded-full bg-accent text-accent-foreground hover:bg-primary hover:text-primary-foreground transition-colors">
-                        {ex}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl"
+        >
+          <div className="mb-6 flex items-center gap-3">
+            <div className="rounded-2xl bg-cyan-500/15 p-3">
+              <Stethoscope className="text-cyan-300" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">AI Triage</h1>
+              <p className="text-sm text-white/60">
+                Describe your condition and answer follow-up questions.
+              </p>
+            </div>
+          </div>
 
-                <div className="relative">
-                  <textarea
-                    value={symptomInput}
-                    onChange={e => setSymptomInput(e.target.value)}
-                    placeholder="Describe your symptoms in detail..."
-                    rows={5}
-                    className="w-full rounded-2xl border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none shadow-card"
-                  />
-                  {isListening && (
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emergency/10 border border-emergency/20">
-                      <span className="w-2 h-2 rounded-full bg-emergency animate-pulse" />
-                      <span className="text-xs font-medium text-emergency">Listening...</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={toggleVoiceInput}
-                  aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
-                  title={isListening ? 'Stop voice input' : 'Start voice input'}
-                  className={`p-3 rounded-xl transition-all ${
-                    isListening
-                      ? 'bg-emergency/10 text-emergency border border-emergency/20 shadow-glow-emergency'
-                      : 'bg-muted text-muted-foreground hover:bg-accent'
-                  }`}>
-                  {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                </button>
-                <button onClick={handleSubmit} disabled={!symptomInput.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl gradient-primary text-primary-foreground font-semibold shadow-glow-primary disabled:opacity-40 transition-all">
-                  <Send className="w-4 h-4" /> Analyze Symptoms
-                </button>
-              </div>
-            </motion.div>
+          {errorMessage && (
+            <div className="mb-4 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {errorMessage}
+            </div>
           )}
 
-          {step === 'analyzing' && (
-            <motion.div key="analyzing" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col items-center justify-center gap-4">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center">
-                  <Brain className="w-10 h-10 text-primary-foreground" />
-                </div>
-                <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-pulse-ring" />
-              </div>
-              <div className="text-center">
-                <h2 className="text-lg font-bold text-foreground">Analyzing Symptoms</h2>
-                <p className="text-sm text-muted-foreground mt-1">AI is processing your information...</p>
-              </div>
-              <Loader2 className="w-5 h-5 text-primary animate-spin" />
-            </motion.div>
+          {uiStep === "input" && (
+            <div className="space-y-4">
+              <label className="block text-sm text-white/70">
+                What symptoms are you experiencing?
+              </label>
+              <textarea
+                value={symptomInput}
+                onChange={(e) => setSymptomInput(e.target.value)}
+                placeholder="Example: fever, cough, headache"
+                className="min-h-[140px] w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
+              />
+              <button
+                onClick={handlePrimaryAction}
+                disabled={loading}
+                className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 font-medium text-slate-950 hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Send size={16} />
+                {loading ? "Starting..." : "Start Triage"}
+              </button>
+            </div>
           )}
 
-          {step === 'followup' && (
-            <motion.div key="followup" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-              className="flex-1 flex flex-col">
-              <div className="bg-accent/50 rounded-2xl p-4 mb-4">
-                <p className="text-xs font-medium text-accent-foreground mb-1">Additional information needed</p>
-                <p className="text-sm text-foreground">{followUpQuestions[followUpIndex]}</p>
+          {uiStep === "analyzing" && (
+            <div className="py-10 text-center">
+              <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" />
+              <p className="text-lg font-medium">Starting workflow...</p>
+              <p className="mt-2 text-sm text-white/60">
+                Preparing your triage session.
+              </p>
+            </div>
+          )}
+
+          {uiStep === "followup" && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                <p className="mb-2 text-xs uppercase tracking-wide text-cyan-300">
+                  Current Question
+                </p>
+                <p className="text-lg font-medium">
+                  {currentQuestion || "No question available."}
+                </p>
               </div>
-              <div className="flex-1" />
-              <div className="flex gap-3">
+
+              <div className="space-y-4">
+                <label className="block text-sm text-white/70">
+                  Your answer
+                </label>
                 <input
-                  value={currentAnswer}
-                  onChange={e => setCurrentAnswer(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleFollowUp()}
-                  placeholder="Your answer..."
-                  className="flex-1 rounded-xl border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  type="text"
+                  value={answerInput}
+                  onChange={(e) => setAnswerInput(e.target.value)}
+                  placeholder="Type your answer here"
+                  className="w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
                 />
                 <button
-                  onClick={handleFollowUp}
-                  disabled={!currentAnswer.trim()}
-                  aria-label="Submit follow-up answer"
-                  title="Submit follow-up answer"
-                  className="px-4 rounded-xl gradient-primary text-primary-foreground font-semibold disabled:opacity-40">
-                  <Send className="w-4 h-4" />
+                  onClick={handlePrimaryAction}
+                  disabled={loading}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-5 py-3 font-medium text-slate-950 hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Send size={16} />
+                  {loading ? "Submitting..." : "Submit Answer"}
                 </button>
               </div>
-            </motion.div>
+
+              {workflowData && (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="mb-3 text-sm font-semibold text-white/80">
+                    Workflow Status
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl bg-slate-900 px-4 py-3">
+                      <p className="text-xs text-white/50">Session ID</p>
+                      <p className="mt-1 break-all text-sm">{workflowData.session_id}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-900 px-4 py-3">
+                      <p className="text-xs text-white/50">Current Step</p>
+                      <p className="mt-1 text-sm">{workflowData.current_step}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-900 px-4 py-3">
+                      <p className="text-xs text-white/50">Pending Fields</p>
+                      <p className="mt-1 text-sm">
+                        {workflowData.pending_fields.length > 0
+                          ? workflowData.pending_fields.join(", ")
+                          : "None"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-900 px-4 py-3">
+                      <p className="text-xs text-white/50">Completed Steps</p>
+                      <p className="mt-1 text-sm">
+                        {workflowData.completed_steps.join(", ")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
-        </AnimatePresence>
+        </motion.div>
       </div>
     </div>
   );
