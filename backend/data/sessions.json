@@ -297,5 +297,253 @@
     "case_summary": null,
     "created_at": "2026-04-20T18:39:44.431Z",
     "updated_at": "2026-04-20T18:39:44.431Z"
+  },
+  {
+    "session_id": "05b1df01-5a87-4ccf-aa44-ddd9ef2e7978",
+    "current_step": "COMPLETED",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE",
+      "COMPLETED"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "chest pain"
+      ],
+      "triage_level": "URGENT",
+      "duration": "2 days",
+      "severity": 8,
+      "breathing_difficulty": "no"
+    },
+    "pending_fields": [],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had chest pain?",
+        "answer": "2 days",
+        "asked_at": "2026-04-21T12:43:05.994Z",
+        "answered_at": "2026-04-21T12:43:59.824Z"
+      },
+      {
+        "field": "severity",
+        "question": "How severe is your chest pain on a scale from 1 to 10?",
+        "answer": 8,
+        "asked_at": "2026-04-21T12:43:59.824Z",
+        "answered_at": "2026-04-21T12:44:22.177Z"
+      },
+      {
+        "field": "breathing_difficulty",
+        "question": "Are you having any difficulty breathing?",
+        "answer": "no",
+        "asked_at": "2026-04-21T12:44:22.177Z",
+        "answered_at": "2026-04-21T12:44:29.760Z"
+      }
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports chest pain for 2 days with severity 8. Breathing difficulty: no. Triage level: URGENT.",
+    "created_at": "2026-04-21T12:43:05.996Z",
+    "updated_at": "2026-04-21T12:45:37.828Z",
+    "resume_message": "Session resumed. Case is ready for scheduling.",
+    "next_question": null,
+    "appointment_result": {
+      "department": "Cardiology",
+      "doctor": "Dr Lim",
+      "time": "10:00",
+      "priority_level": 2,
+      "status": "confirmed",
+      "instructions": "Please arrive 15 minutes early and bring any relevant medical documents.",
+      "booking_type": "scheduled"
+    }
+  },
+  {
+    "session_id": "5b583f92-62cb-486e-be36-83d5eb8e2143",
+    "current_step": "COMPLETED",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE",
+      "COMPLETED"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "chest pain"
+      ],
+      "triage_level": "URGENT",
+      "duration": "2 days",
+      "severity": 8,
+      "breathing_difficulty": "no"
+    },
+    "pending_fields": [],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had chest pain?",
+        "answer": "2 days",
+        "asked_at": "2026-04-21T12:52:46.902Z",
+        "answered_at": "2026-04-21T12:53:34.194Z"
+      },
+      {
+        "field": "severity",
+        "question": "How severe is your chest pain on a scale from 1 to 10?",
+        "answer": 8,
+        "asked_at": "2026-04-21T12:53:34.194Z",
+        "answered_at": "2026-04-21T12:54:36.071Z"
+      },
+      {
+        "field": "breathing_difficulty",
+        "question": "Are you having any difficulty breathing?",
+        "answer": "no",
+        "asked_at": "2026-04-21T12:54:36.071Z",
+        "answered_at": "2026-04-21T12:55:00.597Z"
+      }
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports chest pain for 2 days with severity 8. Breathing difficulty: no. Triage level: URGENT.",
+    "created_at": "2026-04-21T12:52:46.904Z",
+    "updated_at": "2026-04-21T12:55:39.495Z",
+    "resume_message": null,
+    "next_question": null,
+    "appointment_result": {
+      "department": "Cardiology",
+      "doctor": "Dr Lim",
+      "time": "10:00",
+      "priority_level": 2,
+      "status": "confirmed",
+      "instructions": "Please arrive 15 minutes early and bring any relevant medical documents.",
+      "booking_type": "scheduled"
+    }
+  },
+  {
+    "session_id": "a1dc8566-5118-4c70-a043-7c0764cac6c0",
+    "current_step": "READY_FOR_SCHEDULING",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "fever"
+      ],
+      "triage_level": "URGENT",
+      "duration": "3 days",
+      "severity": "3 days"
+    },
+    "pending_fields": [],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had fever?",
+        "answer": "3 days",
+        "asked_at": "2026-04-21T12:57:01.556Z",
+        "answered_at": "2026-04-21T12:59:29.025Z"
+      },
+      {
+        "field": "severity",
+        "question": "How severe is your fever on a scale from 1 to 10?",
+        "answer": "3 days",
+        "asked_at": "2026-04-21T12:59:29.025Z",
+        "answered_at": "2026-04-21T13:01:43.050Z"
+      }
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports fever for 3 days with severity 3 days. Triage level: URGENT.",
+    "created_at": "2026-04-21T12:57:01.556Z",
+    "updated_at": "2026-04-21T13:01:43.051Z",
+    "resume_message": null,
+    "next_question": null
+  },
+  {
+    "session_id": "6f41265c-34f6-4f04-bd9d-3fdb721d5c53",
+    "current_step": "READY_FOR_SCHEDULING",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "fever"
+      ],
+      "triage_level": "URGENT",
+      "duration": "3 days",
+      "severity": 3
+    },
+    "pending_fields": [],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had fever?",
+        "answer": "3 days",
+        "asked_at": "2026-04-21T13:07:36.839Z",
+        "answered_at": "2026-04-21T13:08:17.149Z"
+      },
+      {
+        "field": "severity",
+        "question": "How severe is your fever on a scale from 1 to 10?",
+        "answer": 3,
+        "asked_at": "2026-04-21T13:08:17.149Z",
+        "answered_at": "2026-04-21T13:09:24.778Z"
+      }
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports fever for 3 days with severity 3. Triage level: URGENT.",
+    "validation_error": null,
+    "created_at": "2026-04-21T13:07:36.840Z",
+    "updated_at": "2026-04-21T13:09:24.778Z",
+    "resume_message": null,
+    "next_question": null
+  },
+  {
+    "session_id": "e619f2a5-60ea-4ff2-8f57-7014024079da",
+    "current_step": "COMPLETED",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE",
+      "COMPLETED"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "fever"
+      ],
+      "triage_level": "URGENT",
+      "duration": "3 days",
+      "severity": 7
+    },
+    "pending_fields": [],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had fever?",
+        "answer": "3 days",
+        "asked_at": "2026-04-21T13:14:57.752Z",
+        "answered_at": "2026-04-21T13:15:32.231Z"
+      },
+      {
+        "field": "severity",
+        "question": "How severe is your fever on a scale from 1 to 10?",
+        "answer": 7,
+        "asked_at": "2026-04-21T13:15:32.231Z",
+        "answered_at": "2026-04-21T13:16:42.164Z"
+      }
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports fever for 3 days with severity 7. Triage level: URGENT.",
+    "validation_error": null,
+    "created_at": "2026-04-21T13:14:57.753Z",
+    "updated_at": "2026-04-21T13:17:20.876Z",
+    "resume_message": null,
+    "next_question": null,
+    "appointment_result": {
+      "department": "General",
+      "doctor": "Dr Wong",
+      "time": "09:00",
+      "priority_level": 2,
+      "status": "confirmed",
+      "instructions": "Please arrive 15 minutes early and bring any relevant medical documents.",
+      "booking_type": "scheduled"
+    }
   }
 ]
