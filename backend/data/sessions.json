@@ -545,5 +545,215 @@
       "instructions": "Please arrive 15 minutes early and bring any relevant medical documents.",
       "booking_type": "scheduled"
     }
+  },
+  {
+    "session_id": "a4bc5186-3494-4509-b183-2e12826483d3",
+    "current_step": "COMPLETED",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE",
+      "COMPLETED"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "fever"
+      ],
+      "triage_level": "URGENT",
+      "duration": "3 days",
+      "severity": 4
+    },
+    "pending_fields": [],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had fever?",
+        "answer": "3 days",
+        "asked_at": "2026-04-21T13:41:53.727Z",
+        "answered_at": "2026-04-21T13:42:08.433Z"
+      },
+      {
+        "field": "severity",
+        "question": "How severe is your fever on a scale from 1 to 10?",
+        "answer": 4,
+        "asked_at": "2026-04-21T13:42:08.433Z",
+        "answered_at": "2026-04-21T13:42:11.834Z"
+      }
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports fever for 3 days with severity 4. Triage level: URGENT.",
+    "validation_error": null,
+    "created_at": "2026-04-21T13:41:53.727Z",
+    "updated_at": "2026-04-21T13:42:11.860Z",
+    "resume_message": null,
+    "next_question": null,
+    "appointment_result": {
+      "department": "General",
+      "doctor": "Dr Wong",
+      "time": "09:00",
+      "priority_level": 2,
+      "status": "confirmed",
+      "instructions": "Please arrive 15 minutes early and bring any relevant medical documents.",
+      "booking_type": "scheduled"
+    }
+  },
+  {
+    "session_id": "701ac2d4-9d79-4389-b3f8-908463952560",
+    "current_step": "ASKING_FOLLOWUP",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "fever"
+      ],
+      "triage_level": "URGENT",
+      "duration": "2 days"
+    },
+    "pending_fields": [
+      "severity"
+    ],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had fever?",
+        "answer": "2 days",
+        "asked_at": "2026-04-21T13:44:22.058Z",
+        "answered_at": "2026-04-21T13:44:35.865Z"
+      },
+      {
+        "field": "severity",
+        "question": "How severe is your fever on a scale from 1 to 10?",
+        "answer": null,
+        "asked_at": "2026-04-21T13:44:35.866Z",
+        "answered_at": null
+      }
+    ],
+    "last_question": "How severe is your fever on a scale from 1 to 10?",
+    "last_question_field": "severity",
+    "case_summary": null,
+    "validation_error": null,
+    "created_at": "2026-04-21T13:44:22.058Z",
+    "updated_at": "2026-04-21T13:44:35.866Z",
+    "resume_message": null,
+    "next_question": "How severe is your fever on a scale from 1 to 10?"
+  },
+  {
+    "session_id": "4c1de844-4fe5-48d2-b163-5eb93370bb39",
+    "current_step": "ASKING_FOLLOWUP",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "fever"
+      ],
+      "triage_level": "URGENT"
+    },
+    "pending_fields": [
+      "duration",
+      "severity"
+    ],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had fever?",
+        "answer": null,
+        "asked_at": "2026-04-21T13:44:43.067Z",
+        "answered_at": null
+      }
+    ],
+    "last_question": "How long have you had fever?",
+    "last_question_field": "duration",
+    "case_summary": null,
+    "validation_error": null,
+    "created_at": "2026-04-21T13:44:43.067Z",
+    "updated_at": "2026-04-21T13:44:43.067Z"
+  },
+  {
+    "session_id": "8fa05e70-9bb2-4de5-82af-95a949686bad",
+    "current_step": "ASKING_FOLLOWUP",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "headache"
+      ],
+      "triage_level": "URGENT"
+    },
+    "pending_fields": [
+      "duration",
+      "severity"
+    ],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had headache?",
+        "answer": null,
+        "asked_at": "2026-04-21T13:44:53.530Z",
+        "answered_at": null
+      }
+    ],
+    "last_question": "How long have you had headache?",
+    "last_question_field": "duration",
+    "case_summary": null,
+    "validation_error": null,
+    "created_at": "2026-04-21T13:44:53.530Z",
+    "updated_at": "2026-04-21T13:44:53.530Z"
+  },
+  {
+    "session_id": "3545cd69-ad79-44d0-a8a0-b3a0628c89b0",
+    "current_step": "COMPLETED",
+    "completed_steps": [
+      "INPUT_RECEIVED",
+      "TRIAGE_DONE",
+      "COMPLETED"
+    ],
+    "patient_case": {
+      "symptoms": [
+        "headache"
+      ],
+      "triage_level": "URGENT",
+      "duration": "2 days",
+      "severity": 6
+    },
+    "pending_fields": [],
+    "question_history": [
+      {
+        "field": "duration",
+        "question": "How long have you had headache?",
+        "answer": "2 days",
+        "asked_at": "2026-04-21T13:45:17.405Z",
+        "answered_at": "2026-04-21T13:45:29.286Z"
+      },
+      {
+        "field": "severity",
+        "question": "How severe is your headache on a scale from 1 to 10?",
+        "answer": 6,
+        "asked_at": "2026-04-21T13:45:29.286Z",
+        "answered_at": "2026-04-21T13:45:41.574Z"
+      }
+    ],
+    "last_question": null,
+    "last_question_field": null,
+    "case_summary": "Patient reports headache for 2 days with severity 6. Triage level: URGENT.",
+    "validation_error": null,
+    "created_at": "2026-04-21T13:45:17.405Z",
+    "updated_at": "2026-04-21T13:45:41.604Z",
+    "resume_message": null,
+    "next_question": null,
+    "appointment_result": {
+      "department": "General",
+      "doctor": "Dr Wong",
+      "time": "09:00",
+      "priority_level": 2,
+      "status": "confirmed",
+      "instructions": "Please arrive 15 minutes early and bring any relevant medical documents.",
+      "booking_type": "scheduled"
+    }
   }
 ]
