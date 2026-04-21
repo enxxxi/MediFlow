@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, Loader2, Brain } from 'lucide-react';
+import { Send, Mic, MicOff, Loader2, Brain } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { useApp } from '@/context/AppContext';
 import { simulateTriageAnalysis } from '@/lib/mock-data';
+import { toast } from 'sonner';
 
 const followUpQuestions = [
   'How severe is your pain on a scale of 1–10?',
   'How long have you had these symptoms?',
   'Any difficulty breathing?',
 ];
+
+// Browser Speech Recognition setup
+const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
 export default function Triage() {
   const navigate = useNavigate();
@@ -19,9 +23,65 @@ export default function Triage() {
   const [followUpIndex, setFollowUpIndex] = useState(0);
   const [followUpAnswers, setFollowUpAnswers] = useState<string[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const toggleVoiceInput = () => {
+    if (!SpeechRecognition) {
+      toast.error('Speech recognition is not supported in your browser. Try Chrome or Edge.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognitionRef.current = recognition;
+
+    let finalTranscript = symptomInput;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += (finalTranscript ? ' ' : '') + transcript;
+        } else {
+          interim = transcript;
+        }
+      }
+      setSymptomInput(finalTranscript + (interim ? ' ' + interim : ''));
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed') {
+        toast.error('Microphone access denied. Please allow microphone permission and try again.');
+      } else {
+        toast.error(`Voice input error: ${event.error}`);
+      }
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
 
   const handleSubmit = () => {
     if (!symptomInput.trim()) return;
+    recognitionRef.current?.stop();
+    setIsListening(false);
     setStep('analyzing');
     setTimeout(() => {
       const result = simulateTriageAnalysis(symptomInput);
@@ -73,18 +133,31 @@ export default function Triage() {
                   </div>
                 </div>
 
-                <textarea
-                  value={symptomInput}
-                  onChange={e => setSymptomInput(e.target.value)}
-                  placeholder="Describe your symptoms in detail..."
-                  rows={5}
-                  className="w-full rounded-2xl border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none shadow-card"
-                />
+                <div className="relative">
+                  <textarea
+                    value={symptomInput}
+                    onChange={e => setSymptomInput(e.target.value)}
+                    placeholder="Describe your symptoms in detail..."
+                    rows={5}
+                    className="w-full rounded-2xl border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none shadow-card"
+                  />
+                  {isListening && (
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emergency/10 border border-emergency/20">
+                      <span className="w-2 h-2 rounded-full bg-emergency animate-pulse" />
+                      <span className="text-xs font-medium text-emergency">Listening...</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3 mt-4">
-                <button className="p-3 rounded-xl bg-muted text-muted-foreground hover:bg-accent transition-colors">
-                  <Mic className="w-5 h-5" />
+                <button onClick={toggleVoiceInput}
+                  className={`p-3 rounded-xl transition-all ${
+                    isListening
+                      ? 'bg-emergency/10 text-emergency border border-emergency/20 shadow-glow-emergency'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                  }`}>
+                  {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                 </button>
                 <button onClick={handleSubmit} disabled={!symptomInput.trim()}
                   className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl gradient-primary text-primary-foreground font-semibold shadow-glow-primary disabled:opacity-40 transition-all">
