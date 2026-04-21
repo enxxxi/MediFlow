@@ -39,6 +39,7 @@ router.post("/start", async (req, res) => {
       data: session,
     });
   } catch (error) {
+    console.error("❌ BACKEND ERROR IN /START ROUTE:", error);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -61,6 +62,7 @@ router.post("/answer/:sessionId", async (req, res) => {
       });
     }
 
+    // 2. State Validations
     if (session.current_step === WORKFLOW_STATES.PAUSED) {
       return res.status(400).json({
         success: false,
@@ -89,6 +91,7 @@ router.post("/answer/:sessionId", async (req, res) => {
       });
     }
 
+    // 3. Input Validation
     if (!answer || typeof answer !== "string" || !answer.trim()) {
       return res.status(400).json({
         success: false,
@@ -96,8 +99,10 @@ router.post("/answer/:sessionId", async (req, res) => {
       });
     }
 
-    const updatedSession = updateCaseFromAnswer(session, answer.trim());
+    // 4. Process Answer via Workflow Agent
+    let updatedSession = await updateCaseFromAnswer(session, answer.trim());
 
+    // 5. Check for Agent Validation Errors
     if (updatedSession.validation_error) {
       return res.status(400).json({
         success: false,
@@ -113,15 +118,19 @@ router.post("/answer/:sessionId", async (req, res) => {
       message: "Answer saved successfully",
       data: savedSession,
     });
+
   } catch (error) {
+    // Log the actual error to your VS Code terminal for debugging
+    console.error("❌ BACKEND ERROR IN /ANSWER ROUTE:", error);
+
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Internal Server Error: " + error.message,
     });
   }
 });
 
-//pause
+// PAUSE WORKFLOW SESSION
 router.post("/pause/:sessionId", async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -172,7 +181,7 @@ router.post("/pause/:sessionId", async (req, res) => {
   }
 });
 
-//resume
+// RESUME WORKFLOW SESSION
 router.get("/resume/:sessionId", async (req, res) => {
   try {
     const { sessionId } = req.params;
