@@ -1,4 +1,21 @@
 import { v4 as uuidv4 } from "uuid";
+import { processMedicalInput } from "./inputUnderstanding.agent.js";
+
+// Normalize patient case to ensure symptoms is always an array
+function normalizePatientCase(patientCase = {}) {
+  const normalized = { ...patientCase };
+  
+  // Ensure symptoms is always an array
+  if (!normalized.symptoms) {
+    normalized.symptoms = [];
+  } else if (typeof normalized.symptoms === 'string') {
+    normalized.symptoms = [normalized.symptoms];
+  } else if (!Array.isArray(normalized.symptoms)) {
+    normalized.symptoms = [];
+  }
+  
+  return normalized;
+}
 
 export const WORKFLOW_STATES = {
   START: "START",
@@ -202,9 +219,12 @@ export function shouldRedirectEmergency(patientCase = {}) {
 }
 
 export function createSession(patientCase = {}) {
-  const missingFields = findMissingFields(patientCase);
-  const followup = generateFollowupQuestion(missingFields, patientCase);
-  const isEmergency = shouldRedirectEmergency(patientCase);
+  // Normalize patient case first
+  const normalizedCase = normalizePatientCase(patientCase);
+  
+  const missingFields = findMissingFields(normalizedCase);
+  const followup = generateFollowupQuestion(missingFields, normalizedCase);
+  const isEmergency = shouldRedirectEmergency(normalizedCase);
 
   let currentStep = WORKFLOW_STATES.CHECKING_COMPLETENESS;
 
@@ -223,7 +243,7 @@ export function createSession(patientCase = {}) {
       WORKFLOW_STATES.INPUT_RECEIVED,
       WORKFLOW_STATES.TRIAGE_DONE,
     ],
-    patient_case: patientCase,
+    patient_case: normalizedCase,
     pending_fields: missingFields,
     question_history: followup
       ? [
@@ -239,17 +259,19 @@ export function createSession(patientCase = {}) {
     last_question: followup ? followup.question : null,
     last_question_field: followup ? followup.field : null,
     case_summary:
-      missingFields.length === 0 ? generateCaseSummary(patientCase) : null,
+      missingFields.length === 0 ? generateCaseSummary(normalizedCase) : null,
     validation_error: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
 }
 
-export function updateCaseFromAnswer(session, answer) {
+export async function updateCaseFromAnswer(session, answer) {
   if (!session || !session.last_question_field) return session;
 
   const field = session.last_question_field;
+  
+  // 1. NORMALIZE: Use the simple logic first (e.g., turning "8" into the number 8)
   const normalizedAnswer = normalizeAnswerByField(field, answer);
 
   if (normalizedAnswer === null) {
@@ -257,33 +279,42 @@ export function updateCaseFromAnswer(session, answer) {
       ...session,
       current_step: WORKFLOW_STATES.ASKING_FOLLOWUP,
       validation_error: getValidationErrorMessage(field),
-      resume_message: null,
       next_question: session.last_question,
       updated_at: new Date().toISOString(),
     };
   }
 
+  // 2. 🧠 THE AI RE-EVALUATION (The "Clean Up" Step)
+  // We combine the original messy input with the new answer and ask AI to re-parse it
+  const combinedContext = `Original complaint: ${session.patient_case.symptoms[0]}. New information for ${field}: ${answer}`;
+  
+  // Call your existing Member 2 agent to get a CLEAN patient case
+  const aiRefinedCase = await processMedicalInput(combinedContext);
+
+  // 3. MERGE DATA: Use the AI's clean symptoms but keep our workflow fields
   const updatedPatientCase = {
     ...session.patient_case,
-    [field]: normalizedAnswer,
+    symptoms: aiRefinedCase.symptoms, // Now it will be ["headache", "fever"]!
+    triage_level: aiRefinedCase.triage_level || session.patient_case.triage_level,
+    [field]: normalizedAnswer, // Keep the specific answer we just got
   };
 
-  const updatedHistory = Array.isArray(session.question_history)
-    ? [...session.question_history]
-    : [];
+  const normalizedUpdatedCase = normalizePatientCase(updatedPatientCase);
 
+  // 4. UPDATE HISTORY (Your existing logic)
+  const updatedHistory = Array.isArray(session.question_history) ? [...session.question_history] : [];
   if (updatedHistory.length > 0) {
     const lastEntry = updatedHistory[updatedHistory.length - 1];
-
     if (lastEntry && lastEntry.field === field && lastEntry.answer === null) {
       lastEntry.answer = normalizedAnswer;
       lastEntry.answered_at = new Date().toISOString();
     }
   }
 
-  const missingFields = findMissingFields(updatedPatientCase);
-  const followup = generateFollowupQuestion(missingFields, updatedPatientCase);
-  const isEmergency = shouldRedirectEmergency(updatedPatientCase);
+  // 5. DETERMINE NEXT STEPS
+  const missingFields = findMissingFields(normalizedUpdatedCase);
+  const followup = generateFollowupQuestion(missingFields, normalizedUpdatedCase);
+  const isEmergency = shouldRedirectEmergency(normalizedUpdatedCase);
 
   let currentStep;
   if (isEmergency && missingFields.length === 0) {
@@ -306,18 +337,14 @@ export function updateCaseFromAnswer(session, answer) {
 
   return {
     ...session,
-    patient_case: updatedPatientCase,
+    patient_case: normalizedUpdatedCase,
     pending_fields: missingFields,
     current_step: currentStep,
     last_question: followup ? followup.question : null,
     last_question_field: followup ? followup.field : null,
     question_history: updatedHistory,
-    case_summary:
-      missingFields.length === 0
-        ? generateCaseSummary(updatedPatientCase)
-        : null,
+    case_summary: missingFields.length === 0 ? generateCaseSummary(normalizedUpdatedCase) : null,
     validation_error: null,
-    resume_message: null,
     next_question: followup ? followup.question : null,
     updated_at: new Date().toISOString(),
   };

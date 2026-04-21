@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Send, Stethoscope } from "lucide-react";
+import { toast } from "sonner";
 
 type WorkflowResponse = {
   success: boolean;
@@ -54,14 +55,15 @@ export default function Triage() {
       setErrorMessage("");
       setUiStep("analyzing");
 
+      // --- CRITICAL UPDATE: Ensure this matches your Node.js route ---
       const response = await fetch(`${API_BASE}/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          symptoms: [symptomInput.trim().toLowerCase()],
-          triage_level: "URGENT",
+          symptoms: symptomInput.trim(), // Member 2 will parse this messy string
+          triage_level: "URGENT", 
         }),
       });
 
@@ -73,12 +75,14 @@ export default function Triage() {
         return;
       }
 
+      // Member 2 Result: Setting the session and the first AI question
       setSessionId(data.data.session_id);
       setWorkflowData(data.data);
-      setCurrentQuestion(data.data.last_question);
+      setCurrentQuestion(data.data.last_question ?? null);
       setUiStep("followup");
+      
     } catch (error) {
-      setErrorMessage("Unable to connect to backend.");
+      setErrorMessage("Unable to connect to backend. Is Node.js running on port 5000?");
       setUiStep("input");
     } finally {
       setLoading(false);
@@ -86,13 +90,14 @@ export default function Triage() {
   };
 
   const sendAnswer = async () => {
+    // 1. Guard Clauses: Ensure we have a session and an actual answer
     if (!sessionId) {
-      setErrorMessage("Session not found. Please start again.");
+      setErrorMessage("Session expired or not found. Please restart the triage.");
       return;
     }
 
     if (!answerInput.trim()) {
-      setErrorMessage("Please enter your answer.");
+      setErrorMessage("Please type an answer before submitting.");
       return;
     }
 
@@ -100,6 +105,7 @@ export default function Triage() {
       setLoading(true);
       setErrorMessage("");
 
+      // 2. The Data Bridge: Sending the answer to your Node.js Workflow API
       const response = await fetch(`${API_BASE}/answer/${sessionId}`, {
         method: "POST",
         headers: {
@@ -112,36 +118,47 @@ export default function Triage() {
 
       const data: WorkflowResponse = await response.json();
 
+      // 3. Validation Handling: If Z.AI didn't understand the answer or it was invalid
       if (!data.success && data.data) {
         setWorkflowData(data.data);
+        // Keep the user on the same question if validation failed
         setCurrentQuestion(data.data.last_question || data.data.next_question || null);
-        setErrorMessage(data.message || data.data.validation_error || "Invalid input.");
+        setErrorMessage(data.message || data.data.validation_error || "Invalid input received.");
         return;
       }
 
+      // 4. Critical Failure Check
       if (!data.success || !data.data) {
-        setErrorMessage(data.message || "Failed to submit answer.");
+        setErrorMessage(data.message || "Failed to submit answer to the server.");
         return;
       }
 
+      // 5. State Update: Save the new workflow state
       setWorkflowData(data.data);
-      setAnswerInput("");
+      setAnswerInput(""); // Clear the input box for the next question
 
+      // 6. The Decision Layer (Member 2's Logic)
       if (data.data.current_step === "ASKING_FOLLOWUP") {
-        setCurrentQuestion(data.data.last_question || data.data.next_question || null);
-        return;
-      }
-
-      if (data.data.current_step === "READY_FOR_SCHEDULING") {
+        // Update the UI with the next question from the AI
+        setCurrentQuestion(data.data.next_question || data.data.last_question || null);
+        toast.success("Info updated. Next question...");
+      } 
+      
+      else if (data.data.current_step === "READY_FOR_SCHEDULING") {
+        // Task Completed: Pass the structured medical case to the Result page
+        toast.success("Analysis complete!");
         navigate("/triage-result", {
           state: {
             sessionId: data.data.session_id,
             workflow: data.data,
+            patientCase: data.data.patient_case, // This is the 'Source of Truth'
           },
         });
       }
+
     } catch (error) {
-      setErrorMessage("Unable to connect to backend.");
+      console.error("Workflow Connection Error:", error);
+      setErrorMessage("Unable to connect to the backend. Please ensure your Node.js server is running.");
     } finally {
       setLoading(false);
     }
@@ -178,7 +195,9 @@ export default function Triage() {
             <div>
               <h1 className="text-2xl font-bold">AI Triage</h1>
               <p className="text-sm text-white/60">
-                Describe your condition and answer follow-up questions.
+                Detected: {Array.isArray(workflowData?.patient_case?.symptoms) 
+                  ? workflowData.patient_case.symptoms.join(", ") 
+                  : "Processing..."}
               </p>
             </div>
           </div>
