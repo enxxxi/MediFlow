@@ -23,10 +23,10 @@ export default function Emergency() {
 
       <div className="flex-1 px-5 pb-6 flex flex-col gap-4">
         {/* Emergency Call */}
-        <motion.a href="tel:911" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        <motion.a href="tel:999" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
           className="flex items-center justify-center gap-3 py-5 rounded-2xl gradient-emergency text-emergency-foreground shadow-glow-emergency">
           <Phone className="w-6 h-6" />
-          <span className="text-lg font-bold">Call Emergency — 911</span>
+          <span className="text-lg font-bold">Call Emergency — 999</span>
         </motion.a>
 
         {/* Alert Banner */}
