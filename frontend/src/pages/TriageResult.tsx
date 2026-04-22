@@ -30,13 +30,20 @@ type WorkflowData = {
   resume_message?: string | null;
   next_question?: string | null;
   appointment_result?: {
+    patient_summary: string;
+    triage_level: string;
     department: string;
     doctor: string | null;
-    time: string | null;
+    appointment_time: string | null;
     priority_level: number;
     status: string;
     instructions: string;
     booking_type: string;
+    notification?: {
+      type: string;
+      status: string;
+      message: string;
+    };
   };
 };
 
@@ -192,7 +199,9 @@ export default function TriageResult() {
                 </div>
 
                 <p className="text-sm text-white/80">
-                  {resultData.case_summary || "No case summary available."}
+                  {appointment?.patient_summary ||
+                    resultData.case_summary ||
+                    "No case summary available."}
                 </p>
               </div>
 
@@ -248,7 +257,7 @@ export default function TriageResult() {
                       </p>
                       <p>
                         <span className="text-white/50">Time:</span>{" "}
-                        {appointment.time || "Not available"}
+                        {appointment.appointment_time || "Not available"}
                       </p>
                       <p>
                         <span className="text-white/50">Priority:</span>{" "}
@@ -279,6 +288,25 @@ export default function TriageResult() {
                   <p className="text-sm text-white/75">
                     {appointment.instructions}
                   </p>
+                </div>
+              )}
+
+              {appointment?.notification && (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                  <h3 className="mb-2 text-sm font-semibold text-white/80">
+                    Notification
+                  </h3>
+                  <div className="space-y-2 text-sm text-white/75">
+                    <p>
+                      <span className="text-white/50">Type:</span>{" "}
+                      {appointment.notification.type}
+                    </p>
+                    <p>
+                      <span className="text-white/50">Status:</span>{" "}
+                      {appointment.notification.status}
+                    </p>
+                    <p>{appointment.notification.message}</p>
+                  </div>
                 </div>
               )}
 

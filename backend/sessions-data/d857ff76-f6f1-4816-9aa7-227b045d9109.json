@@ -1,0 +1,59 @@
+{
+  "session_id": "d857ff76-f6f1-4816-9aa7-227b045d9109",
+  "current_step": "COMPLETED",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE",
+    "COMPLETED"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "cough",
+      "runny nose"
+    ],
+    "duration": "3 days",
+    "severity": 5,
+    "triage_level": "NON-URGENT"
+  },
+  "pending_fields": [],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had these symptoms?",
+      "answer": "3 days",
+      "asked_at": "2026-04-22T17:56:35.797Z",
+      "answered_at": "2026-04-22T17:56:40.221Z"
+    },
+    {
+      "field": "severity",
+      "question": "How severe are your symptoms on a scale from 1 to 10?",
+      "answer": 5,
+      "asked_at": "2026-04-22T17:56:40.221Z",
+      "answered_at": "2026-04-22T17:56:47.856Z"
+    }
+  ],
+  "last_question": null,
+  "last_question_field": null,
+  "case_summary": "Patient reports cough, runny nose for 3 days with severity 5. Triage level: NON-URGENT.",
+  "validation_error": null,
+  "created_at": "2026-04-22T17:56:35.797Z",
+  "updated_at": "2026-04-22T17:56:48.428Z",
+  "next_question": null,
+  "resume_message": null,
+  "appointment_result": {
+    "patient_summary": "Patient reports cough, runny nose. Duration: 3 days. Severity: 5.",
+    "triage_level": "NON-URGENT",
+    "department": "General",
+    "doctor": "Dr Wong",
+    "appointment_time": "Today 09:00",
+    "priority_level": 3,
+    "status": "confirmed",
+    "instructions": "Please arrive 15 minutes early and bring any relevant medical documents.",
+    "booking_type": "scheduled",
+    "notification": {
+      "type": "SMS_SIMULATION",
+      "status": "ready_to_send",
+      "message": "Appointment confirmed with Dr Wong at Today 09:00. Department: General. Please arrive 15 minutes early and bring any relevant medical documents."
+    }
+  }
+}
