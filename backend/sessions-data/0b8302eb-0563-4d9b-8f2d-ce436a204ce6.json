@@ -1,0 +1,34 @@
+{
+  "session_id": "0b8302eb-0563-4d9b-8f2d-ce436a204ce6",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "chest pain"
+    ],
+    "triage_level": "URGENT",
+    "duration": "2 days",
+    "severity": "high"
+  },
+  "pending_fields": [
+    "breathing_difficulty"
+  ],
+  "question_history": [
+    {
+      "field": "breathing_difficulty",
+      "question": "Are you having any difficulty breathing?",
+      "answer": null,
+      "asked_at": "2026-04-22T17:25:25.504Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "Are you having any difficulty breathing?",
+  "last_question_field": "breathing_difficulty",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-22T17:25:25.506Z",
+  "updated_at": "2026-04-22T17:25:25.506Z"
+}

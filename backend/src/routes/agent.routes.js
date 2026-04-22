@@ -1,5 +1,6 @@
 import express from "express";
 import { processMedicalInput } from "../agents/inputUnderstanding.agent.js";
+import { scheduleAppointment } from "../services/scheduling.service.js";
 
 const router = express.Router();
 
@@ -17,7 +18,30 @@ router.post("/understand-input", async (req, res) => {
 });
 
 router.post("/schedule", (req, res) => {
-  res.json({ message: "OK" });
+  try {
+    const patientCase = req.body;
+
+    if (!patientCase || typeof patientCase !== "object" || Array.isArray(patientCase)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid patient case data is required",
+      });
+    }
+
+    const result = scheduleAppointment(patientCase);
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment decision generated successfully",
+      data: result,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Scheduling failed",
+      details: error.message,
+    });
+  }
 });
 
 export default router;
