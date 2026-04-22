@@ -1,0 +1,33 @@
+{
+  "session_id": "085b0199-5d62-449d-8310-91643d97c1df",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "I have a bad cough and a fever."
+    ],
+    "triage_level": "URGENT"
+  },
+  "pending_fields": [
+    "duration",
+    "severity"
+  ],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had I have a bad cough and a fever.?",
+      "answer": null,
+      "asked_at": "2026-04-22T15:26:55.172Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "How long have you had I have a bad cough and a fever.?",
+  "last_question_field": "duration",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-22T15:26:55.172Z",
+  "updated_at": "2026-04-22T15:26:55.172Z"
+}

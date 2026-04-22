@@ -1,0 +1,36 @@
+{
+  "session_id": "380e153b-882a-49eb-946f-718d4e7e4428",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "fever",
+      "cough"
+    ],
+    "duration": null,
+    "severity": null,
+    "triage_level": "NON-URGENT"
+  },
+  "pending_fields": [
+    "duration",
+    "severity"
+  ],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had these symptoms?",
+      "answer": null,
+      "asked_at": "2026-04-22T15:32:27.309Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "How long have you had these symptoms?",
+  "last_question_field": "duration",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-22T15:32:27.311Z",
+  "updated_at": "2026-04-22T15:32:27.311Z"
+}

@@ -63,7 +63,6 @@ export default function Triage() {
         },
         body: JSON.stringify({
           symptoms: symptomInput.trim(), // Member 2 will parse this messy string
-          triage_level: "URGENT", 
         }),
       });
 
@@ -90,7 +89,7 @@ export default function Triage() {
   };
 
   const sendAnswer = async () => {
-    // 1. Guard Clauses: Ensure we have a session and an actual answer
+    // 1. Guard Clauses
     if (!sessionId) {
       setErrorMessage("Session expired or not found. Please restart the triage.");
       return;
@@ -101,11 +100,14 @@ export default function Triage() {
       return;
     }
 
+    // Define the toast ID so we can update it (Loading -> Success)
+    const toastId = toast.loading("AI is analyzing your response...");
+
     try {
       setLoading(true);
       setErrorMessage("");
 
-      // 2. The Data Bridge: Sending the answer to your Node.js Workflow API
+      // 2. The Data Bridge
       const response = await fetch(`${API_BASE}/answer/${sessionId}`, {
         method: "POST",
         headers: {
@@ -116,61 +118,71 @@ export default function Triage() {
         }),
       });
 
+      // Check if the server crashed (500) or endpoint is wrong (404)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Server responded with an error");
+      }
+
       const data: WorkflowResponse = await response.json();
 
-      // 3. Validation Handling: If Z.AI didn't understand the answer or it was invalid
+      // 3. Validation Handling (AI didn't understand the answer)
       if (!data.success && data.data) {
         setWorkflowData(data.data);
-        // Keep the user on the same question if validation failed
         setCurrentQuestion(data.data.last_question || data.data.next_question || null);
-        setErrorMessage(data.message || data.data.validation_error || "Invalid input received.");
+        setErrorMessage(data.message || "Invalid input. Please try again.");
+        toast.error("I didn't quite get that.", { id: toastId });
         return;
       }
 
       // 4. Critical Failure Check
       if (!data.success || !data.data) {
-        setErrorMessage(data.message || "Failed to submit answer to the server.");
-        return;
+        throw new Error(data.message || "Failed to submit answer.");
       }
 
-      // 5. State Update: Save the new workflow state
-      setWorkflowData(data.data);
-      setAnswerInput(""); // Clear the input box for the next question
+      const workflow = data.data;
 
-      // 6. The Decision Layer (Member 2's Logic)
-      if (data.data.current_step === "ASKING_FOLLOWUP") {
-        // Update the UI with the next question from the AI
-        setCurrentQuestion(data.data.next_question || data.data.last_question || null);
-        toast.success("Info updated. Next question...");
+      // 5. Success State Update
+      setWorkflowData(workflow);
+      setAnswerInput(""); 
+
+      // 6. Decision Layer (Routing based on Workflow State)
+      if (workflow.current_step === "ASKING_FOLLOWUP") {
+        setCurrentQuestion(workflow.next_question || workflow.last_question || null);
+        toast.success("Details updated. One more thing...", { id: toastId });
       } 
       
-      else if (data.data.current_step === "READY_FOR_SCHEDULING") {
-        // Task Completed: Pass the structured medical case to the Result page
-        toast.success("Analysis complete!");
-        navigate("/triage-result", {
-          state: {
-            sessionId: data.data.session_id,
-            workflow: data.data,
-            patientCase: data.data.patient_case, // This is the 'Source of Truth'
-          },
-        });
+      else if (workflow.current_step === "READY_FOR_SCHEDULING") {
+        toast.success("Triage complete! Redirecting...", { id: toastId });
+        
+        // Give the user a half-second to see the success toast before navigating
+        setTimeout(() => {
+          navigate("/triage-result", {
+            state: {
+              sessionId: workflow.session_id,
+              workflow: workflow,
+              patientCase: workflow.patient_case, 
+            },
+          });
+        }, 500);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Workflow Connection Error:", error);
-      setErrorMessage("Unable to connect to the backend. Please ensure your Node.js server is running.");
+      setErrorMessage(error.message || "Unable to connect to the backend.");
+      toast.error("Connection error. Try again.", { id: toastId });
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePrimaryAction = async () => {
-    if (uiStep === "input") {
-      await startWorkflow();
-    } else if (uiStep === "followup") {
-      await sendAnswer();
-    }
-  };
+    const handlePrimaryAction = async () => {
+      if (uiStep === "input") {
+        await startWorkflow();
+      } else if (uiStep === "followup") {
+        await sendAnswer();
+      }
+    };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white px-4 py-8">

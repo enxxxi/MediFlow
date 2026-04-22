@@ -10,6 +10,7 @@ import {
   resumeWorkflow,
   pauseWorkflow,
 } from "../agents/workflow.agent.js";
+import { processMedicalInput } from "../agents/inputUnderstanding.agent.js";
 
 import {
   getSessionById,
@@ -20,6 +21,7 @@ import {
 
 // start session
 router.post("/start", async (req, res) => {
+  console.log("🚀 Start request received! Talking to AI now...");
   try {
     const patientCase = req.body;
 
@@ -30,7 +32,22 @@ router.post("/start", async (req, res) => {
       });
     }
 
-    const session = createSession(patientCase);
+    let normalizedPatientCase = { ...patientCase };
+
+    if (typeof patientCase.symptoms === "string" && patientCase.symptoms.trim()) {
+      const parsedInput = await processMedicalInput(patientCase.symptoms.trim());
+
+      normalizedPatientCase = {
+        ...normalizedPatientCase,
+        symptoms: parsedInput.symptoms,
+        duration: normalizedPatientCase.duration ?? parsedInput.duration ?? null,
+        severity: normalizedPatientCase.severity ?? parsedInput.severity ?? null,
+        triage_level:
+          parsedInput.triage_level ?? normalizedPatientCase.triage_level ?? "NON-URGENT",
+      };
+    }
+
+    const session = await createSession(normalizedPatientCase);
     await saveSession(session);
 
     return res.status(201).json({
@@ -100,7 +117,7 @@ router.post("/answer/:sessionId", async (req, res) => {
     }
 
     // 4. Process Answer via Workflow Agent
-    let updatedSession = await updateCaseFromAnswer(session, answer.trim());
+    const updatedSession = await updateCaseFromAnswer(session, answer.trim());
 
     // 5. Check for Agent Validation Errors
     if (updatedSession.validation_error) {

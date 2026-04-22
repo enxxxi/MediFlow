@@ -1,26 +1,128 @@
 import axios from "axios";
+import { normalizeDurationText } from "../../utils/helpers.js";
 
-/**
- * Role: Convert messy user input → structured medical data
- */
+let zAIAuthDisabled = false;
+
+const KNOWN_SYMPTOMS = [
+    "fever",
+    "cough",
+    "headache",
+    "sore throat",
+    "chest pain",
+    "shortness of breath",
+    "nausea",
+    "vomiting",
+    "dizziness",
+    "fatigue",
+    "runny nose",
+    "body ache",
+    "diarrhea",
+    "leg fracture",
+    "leg injury",
+    "leg pain",
+    "swollen leg",
+    "ankle sprain",
+    "ankle injury",
+    "sprain",
+    "fracture",
+    "injury",
+];
+
+function detectInjurySymptoms(rawText = "") {
+    const text = String(rawText || "").toLowerCase();
+    const matches = [];
+
+    if (/\b(broke|broken|fracture|fractured)\b/.test(text) && /\bleg\b/.test(text)) {
+        matches.push("leg fracture");
+    }
+
+    if (/\b(broke|broken|fracture|fractured)\b/.test(text) && /\b(arm|wrist|ankle|foot|rib)\b/.test(text)) {
+        matches.push("fracture");
+    }
+
+    if (/\b(twisted|sprain|sprained|rolled)\b/.test(text) && /\bankle\b/.test(text)) {
+        matches.push("ankle sprain");
+    }
+
+    if (/\b(sprain|twisted|strain)\b/.test(text)) {
+        matches.push("sprain");
+    }
+
+    if (/\b(swollen|swelling|bruise|bruised|cut|bleeding)\b/.test(text)) {
+        matches.push("injury");
+    }
+
+    if (matches.includes("ankle sprain")) {
+        return matches.filter((item) => item !== "sprain");
+    }
+
+    return matches;
+}
+
+function normalizeSymptomsList(symptoms, rawText = "") {
+    const rawTokens = Array.isArray(symptoms)
+        ? symptoms
+        : typeof symptoms === "string"
+            ? [symptoms]
+            : [];
+
+    const fromTokens = rawTokens
+        .map((item) => String(item || "").toLowerCase().trim())
+        .flatMap((token) => token.split(/[,.;]|\band\b|\bwith\b/))
+        .map((token) => token.replace(/[^a-z\s-]/g, "").trim())
+        .filter(Boolean);
+
+    const combinedText = `${fromTokens.join(" ")} ${String(rawText || "").toLowerCase()}`;
+    const matched = KNOWN_SYMPTOMS.filter((symptom) => combinedText.includes(symptom));
+    const injuryMatches = detectInjurySymptoms(rawText);
+
+    const cleaned = [...matched, ...injuryMatches].length > 0
+        ? [...new Set([...matched, ...injuryMatches])]
+        : fromTokens.filter((token) => token.length > 2);
+    return [...new Set(cleaned)].slice(0, 5);
+}
+
+function fallbackMedicalParse(rawText) {
+    const text = String(rawText || "").toLowerCase();
+    const symptoms = normalizeSymptomsList([], text);
+
+    const durationMatch = text.match(/(\d+\s*(day|days|week|weeks|month|months|hour|hours))/);
+    const severityMatch = text.match(/(?:pain|severity|level)?\s*(\d{1,2})\s*(?:\/\s*10)?/);
+
+    const emergencySignals = ["chest pain", "shortness of breath", "can not breathe", "unconscious", "seizure"];
+    const urgentSignals = ["high fever", "vomiting", "severe pain", "dizziness", "dehydration", "broken leg", "fracture", "leg injury"];
+
+    const hasEmergencySignal = emergencySignals.some((signal) => text.includes(signal));
+    const hasUrgentSignal = urgentSignals.some((signal) => text.includes(signal));
+
+    let triageLevel = "NON-URGENT";
+    if (hasEmergencySignal) {
+        triageLevel = "EMERGENCY";
+    } else if (hasUrgentSignal) {
+        triageLevel = "URGENT";
+    }
+
+    return {
+        symptoms: symptoms.length ? symptoms : ["injury"],
+        duration: normalizeDurationText(durationMatch ? durationMatch[1] : text),
+        severity: severityMatch ? Math.min(Number(severityMatch[1]), 10) : null,
+        triage_level: triageLevel === "NON-URGENT" && /\b(broke|broken|fracture|fractured)\b/.test(text) ? "URGENT" : triageLevel,
+        intent: "consultation",
+        confidenceScore: 40,
+        patient_type: "adult",
+        raw_input: rawText,
+    };
+}
+
 export async function processMedicalInput(rawText) {
     // 1. CONFIGURATION
-    const ZAI_ENDPOINT = process.env.ZAI_ENDPOINT || "https://api.z-ai.com/v1/chat/completions";
-    const ZAI_API_KEY = process.env.ZAI_API_KEY;
+    const ZAI_ENDPOINT = process.env.ZAI_ENDPOINT?.trim() || "https://api.z-ai.com/v1/chat/completions";
+    const ZAI_API_KEY = process.env.ZAI_API_KEY?.trim();
 
-    // 2. FALLBACK LOGIC (For development/testing if API key is missing)
-    if (!ZAI_API_KEY) {
+    // 2. FALLBACK LOGIC
+    if (!ZAI_API_KEY || zAIAuthDisabled) {
         console.warn("⚠️ ZAI_API_KEY not found in .env. Using fallback data.");
-        return {
-            symptoms: ["headache"],
-            duration: "2 days",
-            severity: "moderate",
-            intent: "consultation",
-            confidenceScore: 50,
-            patient_type: "adult",
-            raw_input: rawText,
-            warning: "ZAI_API_KEY not set; returned fallback response.",
-        };
+        return fallbackMedicalParse(rawText);
     }
 
     // 3. THE BRAIN (GLM PROMPT)
@@ -29,48 +131,69 @@ export async function processMedicalInput(rawText) {
         messages: [
             {
                 role: "system",
-                content: `You are the MediFlow Input Understanding Agent. 
-                Your goal is to parse unstructured medical complaints into a precise JSON format.
-                
-                STRICT RULES:
-                1. Normalize symptoms (e.g., "my tummy hurts" -> "abdominal pain").
-                2. Extrapolate severity (low/moderate/high/critical) based on clinical red flags.
-                3. Determine intent: 'emergency' for life-threatening, 'consultation' for normal.
-                4. Set confidenceScore (0-100) based on how much detail is provided.
-                5. Identify patient_type (adult/child/unknown).
-                6. Output ONLY raw JSON. No conversational text or markdown blocks.
-                
-                Extract only the medical keywords for symptoms. Do NOT include conversational filler.
-                Bad: ['Umm, hi. So my head has been pounding...']
-                Good: ['headache', 'fever']`
+                content: `You are the MediFlow Medical Data Parser. 
+                    Your sole purpose is to convert messy human speech into a clean, machine-readable JSON object.
+
+                    ### EXTRACTION RULES:
+                    1. SYMPTOMS: Extract ONLY medical keywords. 
+                    - REMOVE conversational fillers (e.g., "Umm", "hi", "really pounding").
+                    - NORMALIZE terms (e.g., "hot forehead" -> "fever").
+                    - FORMAT: Always an array of strings.
+                    2. TRIAGE LEVEL: Based on the symptoms, assign: "EMERGENCY", "URGENT", or "NON-URGENT".
+                    3. SEVERITY: Extract a numerical value (1-10).
+                    4. DURATION: Extract a concise string (e.g., "2 days").
+                    5. INTENT: Must be 'emergency' or 'consultation'.
+                    6. CONFIDENCE: Integer 0-100.
+
+                    ### TARGET JSON STRUCTURE:
+                    {
+                    "symptoms": ["headache", "fever"],
+                    "triage_level": "URGENT",
+                    "severity": 8,
+                    "duration": "2 days",
+                    "intent": "consultation",
+                    "confidenceScore": 90,
+                    "patient_type": "adult"
+                    }
+
+                    OUTPUT ONLY RAW JSON. NO MARKDOWN. NO CONVERSATION.`
             },
             {
                 role: "user",
                 content: `Convert this input to JSON: "${rawText}"`
             },
         ],
-        temperature: 0.1, // Set low for consistent structured output
+        temperature: 0.1,
     };
 
-    // 4. API EXECUTION
+    // 4. API EXECUTION & PARSING
     try {
         const response = await axios.post(ZAI_ENDPOINT, requestBody, {
+            timeout: 10000,
             headers: {
                 Authorization: `Bearer ${ZAI_API_KEY}`,
                 "Content-Type": "application/json",
             },
         });
 
-        // Extract and clean the AI response
-        const aiResponse = response?.data?.choices?.[0]?.message?.content || "{}";
-        const cleanJson = aiResponse.replace(/```json|```/g, "").trim();
-        const parsed = JSON.parse(cleanJson);
+        // Extract text content from AI
+        const aiContent = response?.data?.choices?.[0]?.message?.content || "{}";
+        
+        // --- CLEANING LOGIC ---
+        // Removes backticks and extra whitespace
+        const cleanJsonString = aiContent.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(cleanJsonString);
 
-        // 5. RETURN STRUCTURED MEDICAL CASE
+        // 5. RETURN STRUCTURED DATA
+        const normalizedSymptoms = normalizeSymptomsList(parsed.symptoms, rawText);
+        const injuryMatches = detectInjurySymptoms(rawText);
+        const mergedSymptoms = [...new Set([...normalizedSymptoms, ...injuryMatches])];
+
         return {
-            symptoms: parsed.symptoms || [],
-            duration: parsed.duration || "not specified",
-            severity: parsed.severity || "moderate",
+            symptoms: mergedSymptoms.length ? mergedSymptoms : ["injury"],
+            duration: normalizeDurationText(parsed.duration) || "not specified",
+            severity: parsed.severity || 1,
+            triage_level: parsed.triage_level || (/\b(broke|broken|fracture|fractured)\b/.test(String(rawText || "").toLowerCase()) ? "URGENT" : "NON-URGENT"),
             intent: parsed.intent || "consultation",
             confidenceScore: parsed.confidenceScore || 0,
             patient_type: parsed.patient_type || "adult",
@@ -78,11 +201,15 @@ export async function processMedicalInput(rawText) {
         };
 
     } catch (error) {
-        console.error("❌ Z.AI Agent Error:", error.message);
+        if (error?.response?.status === 401) {
+            console.error("❌ Z.AI Agent Error: Unauthorized. Check ZAI_API_KEY in backend/.env.");
+            zAIAuthDisabled = true;
+        } else {
+            console.error("❌ Z.AI Agent Error:", error.message);
+        }
         return {
+            ...fallbackMedicalParse(rawText),
             error: "Z.AI Analysis Failed",
-            details: error.message,
-            raw_input: rawText,
         };
     }
 }
