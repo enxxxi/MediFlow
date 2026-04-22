@@ -6,6 +6,9 @@
   "General": [
     { "name": "Dr Wong", "priority": 1 }
   ],
+  "Orthopedics": [
+    { "name": "Dr Kumar", "priority": 1 }
+  ],
   "Emergency": [
     { "name": "Dr Lee", "priority": 1 }
   ]

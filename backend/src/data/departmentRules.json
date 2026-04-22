@@ -3,6 +3,9 @@
   "heart pain": "Cardiology",
   "fever": "General",
   "headache": "General",
+  "injury": "Orthopedics",
+  "fracture": "Orthopedics",
+  "sprain": "Orthopedics",
   "accident": "Emergency",
   "bleeding": "Emergency"
 }
