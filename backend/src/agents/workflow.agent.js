@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { processMedicalInput } from "./inputUnderstanding.agent.js";
+import { normalizeDurationText } from "../../utils/helpers.js";
+
 
 // Normalize patient case to ensure symptoms is always an array
 function normalizePatientCase(patientCase = {}) {
@@ -12,6 +14,10 @@ function normalizePatientCase(patientCase = {}) {
     normalized.symptoms = [normalized.symptoms];
   } else if (!Array.isArray(normalized.symptoms)) {
     normalized.symptoms = [];
+  }
+
+  if (normalized.duration !== undefined && normalized.duration !== null) {
+    normalized.duration = normalizeDurationText(normalized.duration) || normalized.duration;
   }
   
   return normalized;
@@ -112,6 +118,8 @@ function normalizeAgeGroup(value) {
 
 export function normalizeAnswerByField(field, answer) {
   switch (field) {
+    case "duration":
+      return normalizeDurationText(answer);
     case "severity":
       return normalizeSeverity(answer);
     case "breathing_difficulty":
@@ -175,11 +183,10 @@ export function generateFollowupQuestion(missingFields = [], patientCase = {}) {
   if (!missingFields.length) return null;
 
   const nextField = missingFields[0];
-  const firstSymptom = patientCase?.symptoms?.[0] || "these symptoms";
 
   const customQuestions = {
-    duration: `How long have you had ${firstSymptom}?`,
-    severity: `How severe is your ${firstSymptom} on a scale from 1 to 10?`,
+    duration: "How long have you had these symptoms?",
+    severity: "How severe are your symptoms on a scale from 1 to 10?",
     breathing_difficulty: "Are you having any difficulty breathing?",
     age_group: "Are you an adult, child, or elderly patient?",
   };
@@ -270,8 +277,6 @@ export async function updateCaseFromAnswer(session, answer) {
   if (!session || !session.last_question_field) return session;
 
   const field = session.last_question_field;
-  
-  // 1. NORMALIZE: Use the simple logic first (e.g., turning "8" into the number 8)
   const normalizedAnswer = normalizeAnswerByField(field, answer);
 
   if (normalizedAnswer === null) {
@@ -284,25 +289,48 @@ export async function updateCaseFromAnswer(session, answer) {
     };
   }
 
-  // 2. 🧠 THE AI RE-EVALUATION (The "Clean Up" Step)
-  // We combine the original messy input with the new answer and ask AI to re-parse it
-  const combinedContext = `Original complaint: ${session.patient_case.symptoms[0]}. New information for ${field}: ${answer}`;
-  
-  // Call your existing Member 2 agent to get a CLEAN patient case
-  const aiRefinedCase = await processMedicalInput(combinedContext);
-
-  // 3. MERGE DATA: Use the AI's clean symptoms but keep our workflow fields
-  const updatedPatientCase = {
+  // Initialize updatedPatientCase with current values as a fallback
+  let updatedPatientCase = {
     ...session.patient_case,
-    symptoms: aiRefinedCase.symptoms, // Now it will be ["headache", "fever"]!
-    triage_level: aiRefinedCase.triage_level || session.patient_case.triage_level,
-    [field]: normalizedAnswer, // Keep the specific answer we just got
+    [field]: normalizedAnswer,
   };
+
+  // Keep symptom extraction stable after initial intake.
+  // Follow-up answers should not replace detected symptoms with a new parse.
+  const shouldReevaluateTriage = ["severity", "breathing_difficulty"].includes(field);
+
+  if (shouldReevaluateTriage) {
+    try {
+      const knownSymptoms = Array.isArray(session.patient_case?.symptoms)
+        ? session.patient_case.symptoms.join(", ")
+        : "unknown";
+      const combinedContext = `Known symptoms: ${knownSymptoms}. Patient answered ${field}: ${answer}`;
+
+      const aiRefinedCase = await processMedicalInput(combinedContext);
+
+      if (aiRefinedCase && !aiRefinedCase.error) {
+        updatedPatientCase = {
+          ...updatedPatientCase,
+          triage_level: aiRefinedCase.triage_level || updatedPatientCase.triage_level,
+        };
+      }
+    } catch (error) {
+      console.error("⚠️ AI Re-evaluation failed, keeping existing triage level:", error.message);
+    }
+  }
 
   const normalizedUpdatedCase = normalizePatientCase(updatedPatientCase);
 
-  // 4. UPDATE HISTORY (Your existing logic)
+  const existingSymptoms = Array.isArray(session.patient_case?.symptoms)
+    ? [...session.patient_case.symptoms]
+    : [];
+  if (existingSymptoms.length > 0) {
+    normalizedUpdatedCase.symptoms = existingSymptoms;
+  }
+
   const updatedHistory = Array.isArray(session.question_history) ? [...session.question_history] : [];
+  
+  // Mark the current question as answered in history
   if (updatedHistory.length > 0) {
     const lastEntry = updatedHistory[updatedHistory.length - 1];
     if (lastEntry && lastEntry.field === field && lastEntry.answer === null) {
@@ -311,10 +339,9 @@ export async function updateCaseFromAnswer(session, answer) {
     }
   }
 
-  // 5. DETERMINE NEXT STEPS
   const missingFields = findMissingFields(normalizedUpdatedCase);
-  const followup = generateFollowupQuestion(missingFields, normalizedUpdatedCase);
   const isEmergency = shouldRedirectEmergency(normalizedUpdatedCase);
+  const followup = generateFollowupQuestion(missingFields, normalizedUpdatedCase);
 
   let currentStep;
   if (isEmergency && missingFields.length === 0) {
@@ -325,6 +352,7 @@ export async function updateCaseFromAnswer(session, answer) {
     currentStep = WORKFLOW_STATES.READY_FOR_SCHEDULING;
   }
 
+  // Push the next question to history if one was generated
   if (followup) {
     updatedHistory.push({
       field: followup.field,
@@ -343,7 +371,7 @@ export async function updateCaseFromAnswer(session, answer) {
     last_question: followup ? followup.question : null,
     last_question_field: followup ? followup.field : null,
     question_history: updatedHistory,
-    case_summary: missingFields.length === 0 ? generateCaseSummary(normalizedUpdatedCase) : null,
+    case_summary: currentStep === WORKFLOW_STATES.READY_FOR_SCHEDULING ? generateCaseSummary(normalizedUpdatedCase) : null,
     validation_error: null,
     next_question: followup ? followup.question : null,
     updated_at: new Date().toISOString(),

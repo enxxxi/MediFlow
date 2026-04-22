@@ -1,0 +1,43 @@
+{
+  "session_id": "74f4985b-7afc-4610-bc10-80f9adae127e",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "fever",
+      "cough"
+    ],
+    "duration": "1 day",
+    "severity": null,
+    "triage_level": "NON-URGENT"
+  },
+  "pending_fields": [
+    "severity"
+  ],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had these symptoms?",
+      "answer": "1 day",
+      "asked_at": "2026-04-22T16:22:13.200Z",
+      "answered_at": "2026-04-22T16:22:13.246Z"
+    },
+    {
+      "field": "severity",
+      "question": "How severe are your symptoms on a scale from 1 to 10?",
+      "answer": null,
+      "asked_at": "2026-04-22T16:22:13.246Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "How severe are your symptoms on a scale from 1 to 10?",
+  "last_question_field": "severity",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-22T16:22:13.202Z",
+  "updated_at": "2026-04-22T16:22:13.247Z",
+  "next_question": "How severe are your symptoms on a scale from 1 to 10?"
+}

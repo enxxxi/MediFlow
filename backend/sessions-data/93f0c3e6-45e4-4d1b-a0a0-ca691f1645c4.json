@@ -1,0 +1,38 @@
+{
+  "session_id": "93f0c3e6-45e4-4d1b-a0a0-ca691f1645c4",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "chest pain",
+      "shortness of breath"
+    ],
+    "duration": null,
+    "severity": null,
+    "triage_level": "EMERGENCY"
+  },
+  "pending_fields": [
+    "duration",
+    "severity",
+    "breathing_difficulty",
+    "age_group"
+  ],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had these symptoms?",
+      "answer": null,
+      "asked_at": "2026-04-22T15:32:27.470Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "How long have you had these symptoms?",
+  "last_question_field": "duration",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-22T15:32:27.470Z",
+  "updated_at": "2026-04-22T15:32:27.470Z"
+}

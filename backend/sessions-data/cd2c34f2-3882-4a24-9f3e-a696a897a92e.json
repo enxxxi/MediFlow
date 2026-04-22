@@ -1,0 +1,35 @@
+{
+  "session_id": "cd2c34f2-3882-4a24-9f3e-a696a897a92e",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "sprain"
+    ],
+    "duration": null,
+    "severity": null,
+    "triage_level": "NON-URGENT"
+  },
+  "pending_fields": [
+    "duration",
+    "severity"
+  ],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had these symptoms?",
+      "answer": null,
+      "asked_at": "2026-04-22T16:03:22.566Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "How long have you had these symptoms?",
+  "last_question_field": "duration",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-22T16:03:22.566Z",
+  "updated_at": "2026-04-22T16:03:22.566Z"
+}

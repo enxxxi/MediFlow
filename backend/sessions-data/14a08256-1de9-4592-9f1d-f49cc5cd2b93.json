@@ -1,0 +1,33 @@
+{
+  "session_id": "14a08256-1de9-4592-9f1d-f49cc5cd2b93",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "fever cough"
+    ],
+    "triage_level": "URGENT"
+  },
+  "pending_fields": [
+    "duration",
+    "severity"
+  ],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had fever cough?",
+      "answer": null,
+      "asked_at": "2026-04-22T15:15:13.566Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "How long have you had fever cough?",
+  "last_question_field": "duration",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-22T15:15:13.568Z",
+  "updated_at": "2026-04-22T15:15:13.568Z"
+}

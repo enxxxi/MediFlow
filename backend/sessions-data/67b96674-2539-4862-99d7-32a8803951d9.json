@@ -1,0 +1,35 @@
+{
+  "session_id": "67b96674-2539-4862-99d7-32a8803951d9",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "ankle sprain"
+    ],
+    "duration": null,
+    "severity": null,
+    "triage_level": "NON-URGENT"
+  },
+  "pending_fields": [
+    "duration",
+    "severity"
+  ],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had these symptoms?",
+      "answer": null,
+      "asked_at": "2026-04-22T16:06:54.830Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "How long have you had these symptoms?",
+  "last_question_field": "duration",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-22T16:06:54.830Z",
+  "updated_at": "2026-04-22T16:06:54.830Z"
+}
