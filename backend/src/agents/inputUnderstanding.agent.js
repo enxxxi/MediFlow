@@ -116,7 +116,7 @@ function fallbackMedicalParse(rawText) {
 
 export async function processMedicalInput(rawText) {
     // 1. CONFIGURATION
-    const ZAI_ENDPOINT = process.env.ZAI_ENDPOINT?.trim() || "https://api.z-ai.com/v1/chat/completions";
+    const ZAI_ENDPOINT = process.env.ZAI_ENDPOINT?.trim() || "https://api.ilmu.ai/chat/completions";
     const ZAI_API_KEY = process.env.ZAI_API_KEY?.trim();
 
     // 2. FALLBACK LOGIC

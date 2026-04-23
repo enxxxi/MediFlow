@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
-import { processMedicalInput } from "./inputUnderstanding.agent.js";
 import { normalizeDurationText } from "../../utils/helpers.js";
+import { runTriageAgent } from "./triage.agent.js";
+
+
 
 
 // Normalize patient case to ensure symptoms is always an array
@@ -225,9 +227,26 @@ export function shouldRedirectEmergency(patientCase = {}) {
   return triageLevel === "EMERGENCY";
 }
 
-export function createSession(patientCase = {}) {
+export async function createSession(patientCase = {}) {
+  const triageResult = await runTriageAgent({
+    symptoms: patientCase.symptoms,
+    severity: patientCase.severity,
+    raw_input: patientCase.raw_input
+  });
+
+  
+
+  const enrichedPatientCase = {
+  ...patientCase,
+  triage_level: triageResult.triage_level,
+  risk_score: triageResult.risk_score,
+  triage_confidence: triageResult.confidence,
+  reasoning: triageResult.reasoning,
+  triage_source: triageResult.source,
+  
+};
   // Normalize patient case first
-  const normalizedCase = normalizePatientCase(patientCase);
+  const normalizedCase = normalizePatientCase(enrichedPatientCase);
   
   const missingFields = findMissingFields(normalizedCase);
   const followup = generateFollowupQuestion(missingFields, normalizedCase);
@@ -297,25 +316,22 @@ export async function updateCaseFromAnswer(session, answer) {
 
   // Keep symptom extraction stable after initial intake.
   // Follow-up answers should not replace detected symptoms with a new parse.
-  const shouldReevaluateTriage = ["severity", "breathing_difficulty"].includes(field);
+    const shouldReevaluateTriage = ["severity", "breathing_difficulty"].includes(field);
 
   if (shouldReevaluateTriage) {
     try {
-      const knownSymptoms = Array.isArray(session.patient_case?.symptoms)
-        ? session.patient_case.symptoms.join(", ")
-        : "unknown";
-      const combinedContext = `Known symptoms: ${knownSymptoms}. Patient answered ${field}: ${answer}`;
+      const triageResult = await runTriageAgent(updatedPatientCase);
 
-      const aiRefinedCase = await processMedicalInput(combinedContext);
-
-      if (aiRefinedCase && !aiRefinedCase.error) {
-        updatedPatientCase = {
-          ...updatedPatientCase,
-          triage_level: aiRefinedCase.triage_level || updatedPatientCase.triage_level,
-        };
-      }
+      updatedPatientCase = {
+        ...updatedPatientCase,
+        triage_level: triageResult.triage_level || updatedPatientCase.triage_level,
+        risk_score: triageResult.risk_score ?? updatedPatientCase.risk_score,
+        triage_confidence: triageResult.confidence ?? updatedPatientCase.triage_confidence,
+        reasoning: triageResult.reasoning || updatedPatientCase.reasoning,
+        triage_source: triageResult.source || updatedPatientCase.triage_source,
+      };
     } catch (error) {
-      console.error("⚠️ AI Re-evaluation failed, keeping existing triage level:", error.message);
+      console.error("⚠️ Triage re-evaluation failed, keeping existing triage level:", error.message);
     }
   }
 

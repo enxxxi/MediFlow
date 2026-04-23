@@ -1,0 +1,40 @@
+{
+  "session_id": "87c0369e-6f8b-48a6-85fd-ff6e9fc46476",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "chest pain",
+      "dizziness"
+    ],
+    "duration": null,
+    "severity": null,
+    "triage_level": "EMERGENCY",
+    "risk_score": 90,
+    "reasoning": "Chest pain with dizziness indicates possible cardiac emergency"
+  },
+  "pending_fields": [
+    "duration",
+    "severity",
+    "breathing_difficulty",
+    "age_group"
+  ],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had these symptoms?",
+      "answer": null,
+      "asked_at": "2026-04-23T11:23:28.817Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "How long have you had these symptoms?",
+  "last_question_field": "duration",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-23T11:23:28.817Z",
+  "updated_at": "2026-04-23T11:23:28.817Z"
+}

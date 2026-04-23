@@ -1,0 +1,40 @@
+{
+  "session_id": "c530b655-04e1-4078-9d92-e816a9469a31",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "fever",
+      "headache"
+    ],
+    "duration": "1 day",
+    "severity": null,
+    "triage_level": "NON-URGENT",
+    "risk_score": 26,
+    "triage_confidence": 0.72,
+    "reasoning": "Fallback triage based on fever is lower risk, headache is lower risk.",
+    "triage_source": "fallback",
+    "debug_marker": "member3-new-flow"
+  },
+  "pending_fields": [
+    "severity"
+  ],
+  "question_history": [
+    {
+      "field": "severity",
+      "question": "How severe are your symptoms on a scale from 1 to 10?",
+      "answer": null,
+      "asked_at": "2026-04-23T18:41:36.772Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "How severe are your symptoms on a scale from 1 to 10?",
+  "last_question_field": "severity",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-23T18:41:36.772Z",
+  "updated_at": "2026-04-23T18:41:36.772Z"
+}
