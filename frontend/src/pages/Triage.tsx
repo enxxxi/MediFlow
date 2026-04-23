@@ -4,6 +4,15 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Send, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 
+type PatientCase = {
+  symptoms?: unknown;
+  triage_level?: string;
+  risk_score?: number;
+  triage_confidence?: number;
+  reasoning?: string;
+  triage_source?: string;
+};
+
 type WorkflowResponse = {
   success: boolean;
   message: string;
@@ -11,7 +20,7 @@ type WorkflowResponse = {
     session_id: string;
     current_step: string;
     completed_steps: string[];
-    patient_case: Record<string, unknown>;
+    patient_case: PatientCase;
     pending_fields: string[];
     question_history: Array<{
       field: string;
@@ -55,14 +64,13 @@ export default function Triage() {
       setErrorMessage("");
       setUiStep("analyzing");
 
-      // --- CRITICAL UPDATE: Ensure this matches your Node.js route ---
       const response = await fetch(`${API_BASE}/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          symptoms: symptomInput.trim(), // Member 2 will parse this messy string
+          symptoms: symptomInput.trim(),
         }),
       });
 
@@ -74,12 +82,10 @@ export default function Triage() {
         return;
       }
 
-      // Member 2 Result: Setting the session and the first AI question
       setSessionId(data.data.session_id);
       setWorkflowData(data.data);
       setCurrentQuestion(data.data.last_question ?? null);
       setUiStep("followup");
-      
     } catch (error) {
       setErrorMessage("Unable to connect to backend. Is Node.js running on port 5000?");
       setUiStep("input");
@@ -89,7 +95,6 @@ export default function Triage() {
   };
 
   const sendAnswer = async () => {
-    // 1. Guard Clauses
     if (!sessionId) {
       setErrorMessage("Session expired or not found. Please restart the triage.");
       return;
@@ -100,14 +105,12 @@ export default function Triage() {
       return;
     }
 
-    // Define the toast ID so we can update it (Loading -> Success)
     const toastId = toast.loading("AI is analyzing your response...");
 
     try {
       setLoading(true);
       setErrorMessage("");
 
-      // 2. The Data Bridge
       const response = await fetch(`${API_BASE}/answer/${sessionId}`, {
         method: "POST",
         headers: {
@@ -118,7 +121,6 @@ export default function Triage() {
         }),
       });
 
-      // Check if the server crashed (500) or endpoint is wrong (404)
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Server responded with an error");
@@ -126,7 +128,6 @@ export default function Triage() {
 
       const data: WorkflowResponse = await response.json();
 
-      // 3. Validation Handling (AI didn't understand the answer)
       if (!data.success && data.data) {
         setWorkflowData(data.data);
         setCurrentQuestion(data.data.last_question || data.data.next_question || null);
@@ -135,38 +136,34 @@ export default function Triage() {
         return;
       }
 
-      // 4. Critical Failure Check
       if (!data.success || !data.data) {
         throw new Error(data.message || "Failed to submit answer.");
       }
 
       const workflow = data.data;
 
-      // 5. Success State Update
       setWorkflowData(workflow);
-      setAnswerInput(""); 
+      setAnswerInput("");
 
-      // 6. Decision Layer (Routing based on Workflow State)
       if (workflow.current_step === "ASKING_FOLLOWUP") {
         setCurrentQuestion(workflow.next_question || workflow.last_question || null);
         toast.success("Details updated. One more thing...", { id: toastId });
-      } 
-      
-      else if (workflow.current_step === "READY_FOR_SCHEDULING") {
+      } else if (workflow.current_step === "READY_FOR_SCHEDULING") {
         toast.success("Triage complete! Redirecting...", { id: toastId });
-        
-        // Give the user a half-second to see the success toast before navigating
+
         setTimeout(() => {
           navigate("/triage-result", {
             state: {
               sessionId: workflow.session_id,
               workflow: workflow,
-              patientCase: workflow.patient_case, 
+              patientCase: workflow.patient_case,
             },
           });
         }, 500);
+      } else if (workflow.current_step === "EMERGENCY_REDIRECTED") {
+        toast.success("Emergency case identified.", { id: toastId });
+        setCurrentQuestion(null);
       }
-
     } catch (error: any) {
       console.error("Workflow Connection Error:", error);
       setErrorMessage(error.message || "Unable to connect to the backend.");
@@ -176,13 +173,17 @@ export default function Triage() {
     }
   };
 
-    const handlePrimaryAction = async () => {
-      if (uiStep === "input") {
-        await startWorkflow();
-      } else if (uiStep === "followup") {
-        await sendAnswer();
-      }
-    };
+  const handlePrimaryAction = async () => {
+    if (uiStep === "input") {
+      await startWorkflow();
+    } else if (uiStep === "followup") {
+      await sendAnswer();
+    }
+  };
+
+  const detectedSymptoms = Array.isArray(workflowData?.patient_case?.symptoms)
+    ? (workflowData?.patient_case?.symptoms as string[]).join(", ")
+    : "Processing...";
 
   return (
     <div className="min-h-screen bg-slate-950 text-white px-4 py-8">
@@ -206,11 +207,7 @@ export default function Triage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold">AI Triage</h1>
-              <p className="text-sm text-white/60">
-                Detected: {Array.isArray(workflowData?.patient_case?.symptoms) 
-                  ? workflowData.patient_case.symptoms.join(", ") 
-                  : "Processing..."}
-              </p>
+              <p className="text-sm text-white/60">Detected: {detectedSymptoms}</p>
             </div>
           </div>
 
@@ -254,6 +251,51 @@ export default function Triage() {
 
           {uiStep === "followup" && (
             <div className="space-y-6">
+              {workflowData?.patient_case && (
+                <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                  <p className="mb-3 text-xs uppercase tracking-wide text-cyan-300">
+                    Triage Result
+                  </p>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl bg-slate-950/80 px-4 py-3">
+                      <p className="text-xs text-white/50">Triage Level</p>
+                      <p className="mt-1 text-sm font-medium">
+                        {workflowData.patient_case.triage_level || "N/A"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-slate-950/80 px-4 py-3">
+                      <p className="text-xs text-white/50">Risk Score</p>
+                      <p className="mt-1 text-sm font-medium">
+                        {workflowData.patient_case.risk_score ?? "N/A"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-slate-950/80 px-4 py-3">
+                      <p className="text-xs text-white/50">Confidence</p>
+                      <p className="mt-1 text-sm font-medium">
+                        {workflowData.patient_case.triage_confidence ?? "N/A"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-slate-950/80 px-4 py-3">
+                      <p className="text-xs text-white/50">Source</p>
+                      <p className="mt-1 text-sm font-medium">
+                        {workflowData.patient_case.triage_source || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 rounded-xl bg-slate-950/80 px-4 py-3">
+                    <p className="text-xs text-white/50">Reasoning</p>
+                    <p className="mt-1 text-sm">
+                      {workflowData.patient_case.reasoning || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
                 <p className="mb-2 text-xs uppercase tracking-wide text-cyan-300">
                   Current Question

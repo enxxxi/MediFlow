@@ -14,6 +14,10 @@ type WorkflowData = {
     severity?: number | string;
     breathing_difficulty?: string;
     age_group?: string;
+    risk_score?: number;
+    triage_confidence?: number;
+    reasoning?: string;
+    triage_source?: string;
   };
   pending_fields: string[];
   question_history: Array<{
@@ -106,10 +110,12 @@ export default function TriageResult() {
       }
     };
 
-    // only finalize if workflow is ready and not already completed
     if (resultData.current_step === "READY_FOR_SCHEDULING") {
       finalizeWorkflow();
-    } else if (resultData.current_step === "COMPLETED") {
+    } else if (
+      resultData.current_step === "COMPLETED" ||
+      resultData.current_step === "EMERGENCY_REDIRECTED"
+    ) {
       setLoading(false);
     } else {
       setErrorMessage("Workflow is not ready for final result.");
@@ -125,9 +131,17 @@ export default function TriageResult() {
     resultData.patient_case?.triage_level || "UNKNOWN"
   ).toUpperCase();
 
-  const isEmergency = triageLevel === "EMERGENCY";
+  const isEmergency =
+    triageLevel === "EMERGENCY" ||
+    resultData.current_step === "EMERGENCY_REDIRECTED";
+
   const symptoms = resultData.patient_case?.symptoms || [];
   const appointment = resultData.appointment_result;
+
+  const emergencySummary =
+    resultData.patient_case?.reasoning ||
+    resultData.case_summary ||
+    "This case has been identified as high risk and should not continue through normal scheduling.";
 
   return (
     <div className="min-h-screen bg-slate-950 text-white px-4 py-8">
@@ -152,7 +166,9 @@ export default function TriageResult() {
             <div>
               <h1 className="text-2xl font-bold">Triage Result</h1>
               <p className="text-sm text-white/60">
-                Final assessment and scheduling result.
+                {isEmergency
+                  ? "Emergency assessment result."
+                  : "Final assessment and scheduling result."}
               </p>
             </div>
           </div>
@@ -160,9 +176,13 @@ export default function TriageResult() {
           {loading && (
             <div className="py-10 text-center">
               <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" />
-              <p className="text-lg font-medium">Finalizing appointment...</p>
+              <p className="text-lg font-medium">
+                {isEmergency ? "Preparing emergency result..." : "Finalizing appointment..."}
+              </p>
               <p className="mt-2 text-sm text-white/60">
-                Please wait while we complete scheduling.
+                {isEmergency
+                  ? "Please wait while we prepare emergency guidance."
+                  : "Please wait while we complete scheduling."}
               </p>
             </div>
           )}
@@ -199,9 +219,11 @@ export default function TriageResult() {
                 </div>
 
                 <p className="text-sm text-white/80">
-                  {appointment?.patient_summary ||
-                    resultData.case_summary ||
-                    "No case summary available."}
+                  {isEmergency
+                    ? emergencySummary
+                    : appointment?.patient_summary ||
+                      resultData.case_summary ||
+                      "No case summary available."}
                 </p>
               </div>
 
@@ -225,9 +247,7 @@ export default function TriageResult() {
                     </p>
                     {resultData.patient_case?.breathing_difficulty && (
                       <p>
-                        <span className="text-white/50">
-                          Breathing difficulty:
-                        </span>{" "}
+                        <span className="text-white/50">Breathing difficulty:</span>{" "}
                         {resultData.patient_case.breathing_difficulty}
                       </p>
                     )}
@@ -237,15 +257,45 @@ export default function TriageResult() {
                         {resultData.patient_case.age_group}
                       </p>
                     )}
+                    <p>
+                      <span className="text-white/50">Risk Score:</span>{" "}
+                      {resultData.patient_case?.risk_score ?? "Not available"}
+                    </p>
+                    <p>
+                      <span className="text-white/50">Confidence:</span>{" "}
+                      {resultData.patient_case?.triage_confidence ?? "Not available"}
+                    </p>
+                    <p>
+                      <span className="text-white/50">Source:</span>{" "}
+                      {resultData.patient_case?.triage_source || "Not available"}
+                    </p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
                   <h3 className="mb-3 text-sm font-semibold text-white/80">
-                    Appointment Result
+                    {isEmergency ? "Emergency Action" : "Appointment Result"}
                   </h3>
 
-                  {appointment ? (
+                  {isEmergency ? (
+                    <div className="space-y-3 text-sm text-white/75">
+                      <p>
+                        <span className="text-white/50">Status:</span>{" "}
+                        Immediate escalation required
+                      </p>
+                      <p>
+                        <span className="text-white/50">Recommendation:</span>{" "}
+                        Seek emergency medical attention immediately.
+                      </p>
+                      <p>
+                        <span className="text-white/50">Scheduling:</span>{" "}
+                        Normal appointment scheduling has been bypassed.
+                      </p>
+                      <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-3 text-red-100">
+                        Please go to the nearest emergency department or call emergency services if symptoms worsen.
+                      </p>
+                    </div>
+                  ) : appointment ? (
                     <div className="space-y-2 text-sm text-white/75">
                       <p>
                         <span className="text-white/50">Department:</span>{" "}
@@ -280,7 +330,7 @@ export default function TriageResult() {
                 </div>
               </div>
 
-              {appointment?.instructions && (
+              {!isEmergency && appointment?.instructions && (
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                   <h3 className="mb-2 text-sm font-semibold text-white/80">
                     Instructions
@@ -291,7 +341,18 @@ export default function TriageResult() {
                 </div>
               )}
 
-              {appointment?.notification && (
+              {isEmergency && (
+                <div className="rounded-2xl border border-red-400/20 bg-red-500/10 p-5">
+                  <h3 className="mb-2 text-sm font-semibold text-red-100">
+                    Emergency Instructions
+                  </h3>
+                  <p className="text-sm text-red-50">
+                    Do not wait for a routine appointment. Proceed to emergency care immediately and bring any relevant medical documents if available.
+                  </p>
+                </div>
+              )}
+
+              {!isEmergency && appointment?.notification && (
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                   <h3 className="mb-2 text-sm font-semibold text-white/80">
                     Notification

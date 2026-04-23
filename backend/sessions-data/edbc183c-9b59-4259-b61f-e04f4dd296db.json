@@ -1,0 +1,62 @@
+{
+  "session_id": "edbc183c-9b59-4259-b61f-e04f4dd296db",
+  "current_step": "ASKING_FOLLOWUP",
+  "completed_steps": [
+    "INPUT_RECEIVED",
+    "TRIAGE_DONE"
+  ],
+  "patient_case": {
+    "symptoms": [
+      "chest pain",
+      "dizziness"
+    ],
+    "duration": "2 hours",
+    "severity": 8,
+    "triage_level": "EMERGENCY",
+    "risk_score": 95,
+    "reasoning": "Emergency triggered by chest pain with dizziness, which may indicate a serious cardiovascular issue.",
+    "triage_confidence": 0.97,
+    "triage_source": "rule",
+    "breathing_difficulty": "yes"
+  },
+  "pending_fields": [
+    "age_group"
+  ],
+  "question_history": [
+    {
+      "field": "duration",
+      "question": "How long have you had these symptoms?",
+      "answer": "2 hours",
+      "asked_at": "2026-04-23T11:35:17.598Z",
+      "answered_at": "2026-04-23T18:08:42.612Z"
+    },
+    {
+      "field": "severity",
+      "question": "How severe are your symptoms on a scale from 1 to 10?",
+      "answer": 8,
+      "asked_at": "2026-04-23T18:08:42.612Z",
+      "answered_at": "2026-04-23T18:09:42.191Z"
+    },
+    {
+      "field": "breathing_difficulty",
+      "question": "Are you having any difficulty breathing?",
+      "answer": "yes",
+      "asked_at": "2026-04-23T18:09:42.191Z",
+      "answered_at": "2026-04-23T18:10:20.905Z"
+    },
+    {
+      "field": "age_group",
+      "question": "Are you an adult, child, or elderly patient?",
+      "answer": null,
+      "asked_at": "2026-04-23T18:10:20.906Z",
+      "answered_at": null
+    }
+  ],
+  "last_question": "Are you an adult, child, or elderly patient?",
+  "last_question_field": "age_group",
+  "case_summary": null,
+  "validation_error": null,
+  "created_at": "2026-04-23T11:35:17.598Z",
+  "updated_at": "2026-04-23T18:10:20.906Z",
+  "next_question": "Are you an adult, child, or elderly patient?"
+}
