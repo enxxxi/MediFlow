@@ -228,26 +228,40 @@ export function shouldRedirectEmergency(patientCase = {}) {
 }
 
 export async function createSession(patientCase = {}) {
-  const triageResult = await runTriageAgent({
-    symptoms: patientCase.symptoms,
-    severity: patientCase.severity,
-    raw_input: patientCase.raw_input
-  });
+  const rawInput = String(patientCase.raw_input || "").toLowerCase();
 
-  
+  const severityWasExplicit =
+    patientCase.severity_provided === true ||
+    /\b(10|[1-9])\s*\/\s*10\b/.test(rawInput) ||
+    /\b(severity|pain|level)\s*(is|:)?\s*(10|[1-9])\b/.test(rawInput);
+
+  const cleanedPatientCase = {
+    ...patientCase,
+    severity: severityWasExplicit ? patientCase.severity : null,
+  };
+
+  const cleanTriageInput = {
+    symptoms: cleanedPatientCase.symptoms,
+    raw_input: cleanedPatientCase.raw_input,
+  };
+
+  if (severityWasExplicit) {
+    cleanTriageInput.severity = cleanedPatientCase.severity;
+  }
+
+  const triageResult = await runTriageAgent(cleanTriageInput);
 
   const enrichedPatientCase = {
-  ...patientCase,
-  triage_level: triageResult.triage_level,
-  risk_score: triageResult.risk_score,
-  triage_confidence: triageResult.confidence,
-  reasoning: triageResult.reasoning,
-  triage_source: triageResult.source,
-  
-};
-  // Normalize patient case first
+    ...cleanedPatientCase,
+    triage_level: triageResult.triage_level,
+    risk_score: triageResult.risk_score,
+    triage_confidence: triageResult.confidence,
+    reasoning: triageResult.reasoning,
+    triage_source: triageResult.source,
+  };
+
   const normalizedCase = normalizePatientCase(enrichedPatientCase);
-  
+
   const missingFields = findMissingFields(normalizedCase);
   const followup = generateFollowupQuestion(missingFields, normalizedCase);
   const isEmergency = shouldRedirectEmergency(normalizedCase);
@@ -320,7 +334,20 @@ export async function updateCaseFromAnswer(session, answer) {
 
   if (shouldReevaluateTriage) {
     try {
-      const triageResult = await runTriageAgent(updatedPatientCase);
+      const cleanTriageInput = {
+  symptoms: updatedPatientCase.symptoms,
+  raw_input: updatedPatientCase.raw_input,
+};
+
+if (
+  updatedPatientCase.severity !== undefined &&
+  updatedPatientCase.severity !== null &&
+  updatedPatientCase.severity !== ""
+) {
+  cleanTriageInput.severity = updatedPatientCase.severity;
+}
+
+const triageResult = await runTriageAgent(cleanTriageInput);
 
       updatedPatientCase = {
         ...updatedPatientCase,

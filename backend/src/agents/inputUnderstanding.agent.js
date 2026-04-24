@@ -116,7 +116,7 @@ function fallbackMedicalParse(rawText) {
 
 export async function processMedicalInput(rawText) {
     // 1. CONFIGURATION
-    const ZAI_ENDPOINT = process.env.ZAI_ENDPOINT?.trim() || "https://api.ilmu.ai/chat/completions";
+    const ZAI_ENDPOINT = process.env.ZAI_ENDPOINT?.trim() || "https://api.ilmu.ai/v1/chat/completions";
     const ZAI_API_KEY = process.env.ZAI_API_KEY?.trim();
 
     // 2. FALLBACK LOGIC
@@ -127,7 +127,7 @@ export async function processMedicalInput(rawText) {
 
     // 3. THE BRAIN (GLM PROMPT)
     const requestBody = {
-        model: "z-glm-4",
+        model: "ilmu-glm-5.1",
         messages: [
             {
                 role: "system",
@@ -171,14 +171,17 @@ export async function processMedicalInput(rawText) {
         const response = await axios.post(ZAI_ENDPOINT, requestBody, {
             timeout: 10000,
             headers: {
-                Authorization: `Bearer ${ZAI_API_KEY}`,
-                "Content-Type": "application/json",
+              Authorization: `Bearer ${ZAI_API_KEY}`,
+              "Content-Type": "application/json",
             },
         });
 
         // Extract text content from AI
-        const aiContent = response?.data?.choices?.[0]?.message?.content || "{}";
-        
+        const aiContent =
+          response?.data?.choices?.[0]?.message?.content ||
+          response?.data?.choices?.[0]?.text ||
+          "{}";
+
         // --- CLEANING LOGIC ---
         // Removes backticks and extra whitespace
         const cleanJsonString = aiContent.replace(/```json|```/g, "").trim();
@@ -201,12 +204,20 @@ export async function processMedicalInput(rawText) {
         };
 
     } catch (error) {
-        if (error?.response?.status === 401) {
+        const status = error?.response?.status;
+        const body = error?.response?.data;
+
+        if (status === 401) {
             console.error("❌ Z.AI Agent Error: Unauthorized. Check ZAI_API_KEY in backend/.env.");
             zAIAuthDisabled = true;
         } else {
             console.error("❌ Z.AI Agent Error:", error.message);
         }
+
+        if (body) {
+            console.error("❌ Z.AI Agent response body:", JSON.stringify(body));
+        }
+
         return {
             ...fallbackMedicalParse(rawText),
             error: "Z.AI Analysis Failed",

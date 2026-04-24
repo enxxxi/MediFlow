@@ -4,7 +4,7 @@ import cors from "cors";
 import workflowRoutes from "./src/routes/workflow.routes.js";
 import agentRoutes from "./src/routes/agent.routes.js";
 
-dotenv.config();
+dotenv.config({ override: true });
 const app = express();
 
 app.use(cors());
