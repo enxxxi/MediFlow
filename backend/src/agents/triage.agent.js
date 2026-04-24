@@ -6,13 +6,108 @@ function cleanJsonText(text = "") {
   return String(text || "").replace(/```json|```/g, "").trim();
 }
 
-function ruleBasedEmergencyCheck(patientCase = {}) {
-  const symptoms = Array.isArray(patientCase.symptoms)
+function normalizeTriageLevel(value) {
+  const level = String(value || "").toUpperCase().trim();
+  if (["EMERGENCY", "URGENT", "NON-URGENT"].includes(level)) return level;
+  return "NON-URGENT";
+}
+
+function hasValidSeverity(patientCase = {}) {
+  return (
+    patientCase.severity !== undefined &&
+    patientCase.severity !== null &&
+    patientCase.severity !== "" &&
+    patientCase.severity !== "unknown" &&
+    !Number.isNaN(Number(patientCase.severity))
+  );
+}
+
+function clampNumber(value, fallback, min, max) {
+  const number = Number(value);
+  if (Number.isNaN(number)) return fallback;
+  return Math.min(Math.max(number, min), max);
+}
+
+function getSymptoms(patientCase = {}) {
+  return Array.isArray(patientCase.symptoms)
     ? patientCase.symptoms.map((s) => String(s).toLowerCase())
     : [];
+}
 
-  const severity = Number(patientCase.severity || 0);
+function buildBackupReasoning(patientCase = {}, triageLevel = "NON-URGENT") {
+  const symptoms = getSymptoms(patientCase);
+  const symptomText = symptoms.length > 0 ? symptoms.join(", ") : "the reported symptoms";
+
+  const severityText = hasValidSeverity(patientCase)
+    ? ` with severity ${patientCase.severity}`
+    : "";
+
+  if (triageLevel === "EMERGENCY") {
+    return `${symptomText}${severityText} may indicate a potentially serious condition that requires immediate medical attention.`;
+  }
+
+  if (triageLevel === "URGENT") {
+    return `${symptomText}${severityText} suggests the patient should receive prompt medical assessment, although no immediate life-threatening sign is clearly confirmed.`;
+  }
+
+  return `${symptomText}${severityText} does not show clear emergency red flags based on the available information, so routine care is appropriate unless symptoms worsen.`;
+}
+
+function enforceClinicalSafety(result, patientCase = {}) {
+  const symptoms = getSymptoms(patientCase);
+  const severity = hasValidSeverity(patientCase) ? Number(patientCase.severity) : null;
+
+  if (symptoms.includes("chest pain") && symptoms.includes("dizziness")) {
+    return {
+      ...result,
+      triage_level: "EMERGENCY",
+      risk_score: Math.max(Number(result.risk_score || 0), 95),
+      confidence: Math.max(Number(result.confidence || 0), 0.97),
+      reasoning:
+        "Chest pain with dizziness is treated as an emergency because it may indicate a serious cardiovascular issue.",
+    };
+  }
+
+  if (symptoms.includes("shortness of breath")) {
+    return {
+      ...result,
+      triage_level: "EMERGENCY",
+      risk_score: Math.max(Number(result.risk_score || 0), 92),
+      confidence: Math.max(Number(result.confidence || 0), 0.96),
+      reasoning:
+        "Shortness of breath is treated as an emergency because it may indicate respiratory distress.",
+    };
+  }
+
+  if (symptoms.includes("vomiting") && symptoms.includes("dizziness") && severity !== null && severity >= 7) {
+    return {
+      ...result,
+      triage_level: "URGENT",
+      risk_score: Math.max(Number(result.risk_score || 0), 65),
+      confidence: Math.max(Number(result.confidence || 0), 0.82),
+      reasoning:
+        `Vomiting and dizziness with severity ${severity} may indicate dehydration or a more serious condition, so prompt medical assessment is recommended.`,
+    };
+  }
+
+  if (severity !== null && severity >= 9) {
+    return {
+      ...result,
+      triage_level: "URGENT",
+      risk_score: Math.max(Number(result.risk_score || 0), 80),
+      confidence: Math.max(Number(result.confidence || 0), 0.9),
+      reasoning:
+        `Severity ${severity} is very high, so the case should be treated as urgent even if no specific emergency red flag is confirmed.`,
+    };
+  }
+
+  return result;
+}
+
+function ruleBasedEmergencyCheck(patientCase = {}) {
+  const symptoms = getSymptoms(patientCase);
   const rawInput = String(patientCase.raw_input || "").toLowerCase();
+  const severity = hasValidSeverity(patientCase) ? Number(patientCase.severity) : 0;
 
   if (symptoms.includes("chest pain") && symptoms.includes("dizziness")) {
     return {
@@ -41,8 +136,7 @@ function ruleBasedEmergencyCheck(patientCase = {}) {
       triage_level: "EMERGENCY",
       risk_score: 98,
       confidence: 0.98,
-      reasoning:
-        "Emergency triggered by seizure or unconscious state.",
+      reasoning: "Emergency triggered by seizure or unconscious state.",
       source: "rule",
     };
   }
@@ -52,8 +146,7 @@ function ruleBasedEmergencyCheck(patientCase = {}) {
       triage_level: "URGENT",
       risk_score: 80,
       confidence: 0.9,
-      reasoning:
-        "Urgent classification triggered by very high reported severity.",
+      reasoning: `Urgent classification triggered by very high reported severity ${severity}.`,
       source: "rule",
     };
   }
@@ -62,10 +155,8 @@ function ruleBasedEmergencyCheck(patientCase = {}) {
 }
 
 function fallbackTriage(patientCase = {}) {
-  const symptoms = Array.isArray(patientCase.symptoms)
-    ? patientCase.symptoms.map((s) => String(s).toLowerCase())
-    : [];
-  const severity = Number(patientCase.severity || 0);
+  const symptoms = getSymptoms(patientCase);
+  const severity = hasValidSeverity(patientCase) ? Number(patientCase.severity) : 0;
 
   let risk_score = 10;
   const reasons = [];
@@ -85,18 +176,15 @@ function fallbackTriage(patientCase = {}) {
 
   if (severity >= 8) {
     risk_score += 20;
-    reasons.push("high severity");
+    reasons.push(`severity ${severity} is high`);
   } else if (severity >= 5) {
     risk_score += 10;
-    reasons.push("moderate severity");
+    reasons.push(`severity ${severity} is moderate`);
   }
 
   let triage_level = "NON-URGENT";
-  if (risk_score >= 75) {
-    triage_level = "EMERGENCY";
-  } else if (risk_score >= 40) {
-    triage_level = "URGENT";
-  }
+  if (risk_score >= 75) triage_level = "EMERGENCY";
+  else if (risk_score >= 40) triage_level = "URGENT";
 
   return {
     triage_level,
@@ -112,50 +200,60 @@ function fallbackTriage(patientCase = {}) {
 
 async function runGLMTriage(patientCase = {}) {
   const ZAI_ENDPOINT =
-  process.env.ZAI_ENDPOINT?.trim() || "https://api.ilmu.ai/chat/completions";
+    process.env.ZAI_ENDPOINT?.trim() || "https://api.z-ai.com/v1/chat/completions";
   const ZAI_API_KEY = process.env.ZAI_API_KEY?.trim();
 
   if (!ZAI_API_KEY || zAITriageAuthDisabled) {
     return null;
   }
 
+  const severityInstruction = hasValidSeverity(patientCase)
+    ? `The patient explicitly reported severity ${patientCase.severity}. Use it in reasoning.`
+    : "Severity is missing. Do not assume a severity value and do not mention severity in reasoning.";
+
   const requestBody = {
-    model: "z-glm-4",
+    model: "ilmu-glm-5.1",
     messages: [
       {
         role: "system",
         content: `You are the MediFlow Triage & Medical Reasoning Agent.
 
-Your job is to classify the patient's urgency level based on structured symptom information.
+Return ONLY valid JSON. Do not include markdown or extra text.
 
-Return ONLY raw JSON with this exact structure:
+JSON schema:
 {
   "triage_level": "EMERGENCY" | "URGENT" | "NON-URGENT",
-  "risk_score": 0-100,
-  "confidence": 0-1,
-  "reasoning": "short medical reasoning"
+  "risk_score": number,
+  "confidence": number,
+  "reasoning": "one clear medical sentence based only on provided information"
 }
 
-Guidelines:
-- EMERGENCY: potentially life-threatening symptoms or immediate danger
-- URGENT: needs prompt care but not immediately life-threatening
-- NON-URGENT: mild or routine condition
+Rules:
+- Do not invent missing information.
+- If severity is missing, do not assume a value.
+- risk_score must be between 1 and 100.
+- confidence must be between 0.1 and 1.
+- reasoning must not be empty.
+- EMERGENCY means immediate danger or red-flag symptoms.
+- URGENT means needs prompt care but not immediate danger.
+- NON-URGENT means routine care is suitable if symptoms remain mild.
+- Vomiting with dizziness should usually be at least URGENT when severity is 7 or higher.
+- Very high severity, 9 or 10, should be at least URGENT.
+- Chest pain with dizziness should be EMERGENCY.
+- Shortness of breath should be EMERGENCY.
 
-Be cautious and clinically sensible.
-Do not include markdown.
-Do not include extra text.`,
+${severityInstruction}`,
       },
       {
         role: "user",
-        content: `Patient case:\n${JSON.stringify(patientCase, null, 2)}`,
+        content: `Classify this patient case:\n${JSON.stringify(patientCase, null, 2)}`,
       },
     ],
     temperature: 0.2,
+    max_tokens: 250,
   };
 
   try {
-    console.log("ZAI_ENDPOINT:", ZAI_ENDPOINT);
-    console.log("Request body:", JSON.stringify(requestBody, null, 2));
     const response = await axios.post(ZAI_ENDPOINT, requestBody, {
       timeout: 10000,
       headers: {
@@ -164,41 +262,69 @@ Do not include extra text.`,
       },
     });
 
-    const aiContent = response?.data?.choices?.[0]?.message?.content || "{}";
-    const parsed = JSON.parse(cleanJsonText(aiContent));
+    const aiContent =
+      response?.data?.choices?.[0]?.message?.content ||
+      response?.data?.choices?.[0]?.text ||
+      "{}";
 
-    return {
-      triage_level: parsed.triage_level || "NON-URGENT",
-      risk_score: Number(parsed.risk_score || 0),
-      confidence: Number(parsed.confidence || 0.7),
-      reasoning: parsed.reasoning || "AI triage completed.",
+    console.log("Raw GLM response:", aiContent);
+
+    let parsed = {};
+    try {
+      const cleaned = cleanJsonText(aiContent);
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+
+      if (!jsonMatch) {
+        throw new Error("No JSON object found in GLM response");
+      }
+
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error("❌ GLM JSON parse failed:", parseError.message);
+      console.error("❌ Raw GLM content was:", aiContent);
+      return null;
+    }
+
+    const triageLevel = normalizeTriageLevel(parsed.triage_level);
+    const riskScore = clampNumber(parsed.risk_score, 30, 1, 100);
+    const confidence = clampNumber(parsed.confidence, 0.75, 0.1, 1);
+
+    const cleanReasoning = String(parsed.reasoning || "").trim();
+
+    const glmResult = {
+      triage_level: triageLevel,
+      risk_score: riskScore,
+      confidence,
+      reasoning: cleanReasoning || buildBackupReasoning(patientCase, triageLevel),
       source: "glm",
     };
+
+    return enforceClinicalSafety(glmResult, patientCase);
   } catch (error) {
-    if (error?.response?.status === 401) {
-      console.error("❌ GLM triage unauthorized. Check ZAI_API_KEY.");
+    const status = error?.response?.status;
+    const body = error?.response?.data;
+
+    if (status === 401) {
+      console.error("❌ Z.AI triage unauthorized. Check ZAI_API_KEY.");
       zAITriageAuthDisabled = true;
     } else {
-      console.error("❌ GLM triage error:", error.message);
+      console.error("❌ Z.AI triage error:", error.message);
     }
+
+    if (body) {
+      console.error("❌ GLM triage response body:", JSON.stringify(body));
+    }
+
     return null;
   }
 }
 
 export async function runTriageAgent(patientCase = {}) {
   const ruleResult = ruleBasedEmergencyCheck(patientCase);
-  if (ruleResult) {
-    console.log("Triage result:", ruleResult);
-    return ruleResult;
-  }
+  if (ruleResult) return ruleResult;
 
   const glmResult = await runGLMTriage(patientCase);
-  if (glmResult) {
-    console.log("Triage result:", glmResult);
-    return glmResult;
-  }
+  if (glmResult) return glmResult;
 
-  const fallbackResult = fallbackTriage(patientCase);
-  console.log("Triage result:", fallbackResult);
-  return fallbackResult;
+  return fallbackTriage(patientCase);
 }
