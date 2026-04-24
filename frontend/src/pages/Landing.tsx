@@ -19,12 +19,12 @@ export default function Landing() {
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10">
           <div className="flex items-center gap-3 mb-6">
             <img src="/favicon.png" alt="MediFlow" className="w-12 h-12 rounded-lg" />
-            <span className="text-lg font-bold text-primary-foreground tracking-tight">MediFlow</span>
+            <span className="text-3xl font-bold text-white tracking-tight">MediFlow</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-primary-foreground leading-tight">
+          <h1 className="text-3xl font-extrabold text-white leading-tight">
             Smart Health<br />Triage & Booking
           </h1>
-          <p className="text-primary-foreground/80 mt-3 text-sm leading-relaxed max-w-xs">
+          <p className="text-white/80 mt-3 text-sm leading-relaxed max-w-xs">
             AI-powered symptom analysis, instant urgency assessment, and seamless doctor appointments.
           </p>
         </motion.div>
