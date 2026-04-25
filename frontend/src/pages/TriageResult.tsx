@@ -77,43 +77,39 @@ export default function TriageResult() {
   const sessionId = state?.sessionId ?? state?.workflow?.session_id ?? null;
   const API_BASE = "http://localhost:5000/api/workflow";
 
-useEffect(() => {
-  // 1. Guard against empty data
-  if (!sessionId || !resultData) {
-    navigate("/triage");
-    return;
-  }
+  useEffect(() => {
+    if (!sessionId || !resultData) {
+      navigate("/triage");
+      return;
+    }
 
-  // 2. ONLY run if we are in the scheduling step and NOT already loading
-  if (resultData.current_step === "READY_FOR_SCHEDULING" && loading) {
-    const finalizeWorkflow = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/finalize/${sessionId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
+    if (resultData.current_step === "READY_FOR_SCHEDULING" && loading) {
+      const finalizeWorkflow = async () => {
+        try {
+          const response = await fetch(`${API_BASE}/finalize/${sessionId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
 
-        const data: FinalizeResponse = await response.json();
+          const data: FinalizeResponse = await response.json();
 
-        if (data.success && data.data) {
-          setResultData(data.data);
-        } else {
-          setErrorMessage(data.message || "Failed to finalize.");
+          if (data.success && data.data) {
+            setResultData(data.data);
+          } else {
+            setErrorMessage(data.message || "Failed to finalize.");
+          }
+        } catch (error) {
+          setErrorMessage("Connection error.");
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        setErrorMessage("Connection error.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    finalizeWorkflow();
-  } else if (resultData.current_step !== "READY_FOR_SCHEDULING") {
-    // If we've already finalized or are in emergency mode, stop loading
-    setLoading(false);
-  }
-}, [sessionId]); // Remove resultData from here to stop the loop
-
+      finalizeWorkflow();
+    } else if (resultData.current_step !== "READY_FOR_SCHEDULING") {
+      setLoading(false);
+    }
+  }, [sessionId]);
 
   if (!sessionId || !resultData) {
     return null;
@@ -125,6 +121,7 @@ useEffect(() => {
 
   const isEmergency =
     triageLevel === "EMERGENCY" ||
+    triageLevel === "URGENT" || //remove this later
     resultData.current_step === "EMERGENCY_REDIRECTED";
 
   const symptoms = resultData.patient_case?.symptoms || [];
@@ -140,7 +137,7 @@ useEffect(() => {
       <div className="mx-auto max-w-4xl">
         <button
           onClick={() => {
-            setResultData(null); 
+            setResultData(null);
             navigate("/triage");
           }}
           className="mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-white/80 hover:bg-white/5"
@@ -173,11 +170,6 @@ useEffect(() => {
               <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent" />
               <p className="text-lg font-medium">
                 {isEmergency ? "Preparing emergency result..." : "Finalizing appointment..."}
-              </p>
-              <p className="mt-2 text-sm text-white/60">
-                {isEmergency
-                  ? "Please wait while we prepare emergency guidance."
-                  : "Please wait while we complete scheduling."}
               </p>
             </div>
           )}
@@ -212,58 +204,18 @@ useEffect(() => {
                     {triageLevel}
                   </span>
                 </div>
-
                 <p className="text-sm text-white/80">
-                  {isEmergency
-                    ? emergencySummary
-                    : appointment?.patient_summary ||
-                      resultData.case_summary ||
-                      "No case summary available."}
+                  {isEmergency ? emergencySummary : (appointment?.patient_summary || resultData.case_summary || "No summary available.")}
                 </p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-5">
-                  <h3 className="mb-3 text-sm font-semibold text-white/80">
-                    Patient Case
-                  </h3>
+                  <h3 className="mb-3 text-sm font-semibold text-white/80">Patient Case</h3>
                   <div className="space-y-2 text-sm text-white/75">
-                    <p>
-                      <span className="text-white/50">Symptoms:</span>{" "}
-                      {symptoms.length ? symptoms.join(", ") : "Not provided"}
-                    </p>
-                    <p>
-                      <span className="text-white/50">Duration:</span>{" "}
-                      {resultData.patient_case?.duration || "Not provided"}
-                    </p>
-                    <p>
-                      <span className="text-white/50">Severity:</span>{" "}
-                      {String(resultData.patient_case?.severity ?? "Not provided")}
-                    </p>
-                    {resultData.patient_case?.breathing_difficulty && (
-                      <p>
-                        <span className="text-white/50">Breathing difficulty:</span>{" "}
-                        {resultData.patient_case.breathing_difficulty}
-                      </p>
-                    )}
-                    {resultData.patient_case?.age_group && (
-                      <p>
-                        <span className="text-white/50">Age group:</span>{" "}
-                        {resultData.patient_case.age_group}
-                      </p>
-                    )}
-                    <p>
-                      <span className="text-white/50">Risk Score:</span>{" "}
-                      {resultData.patient_case?.risk_score ?? "Not available"}
-                    </p>
-                    <p>
-                      <span className="text-white/50">Confidence:</span>{" "}
-                      {resultData.patient_case?.triage_confidence ?? "Not available"}
-                    </p>
-                    <p>
-                      <span className="text-white/50">Source:</span>{" "}
-                      {resultData.patient_case?.triage_source || "Not available"}
-                    </p>
+                    <p><span className="text-white/50">Symptoms:</span> {symptoms.length ? symptoms.join(", ") : "Not provided"}</p>
+                    <p><span className="text-white/50">Risk Score:</span> {resultData.patient_case?.risk_score ?? "N/A"}</p>
+                    <p><span className="text-white/50">Confidence:</span> {resultData.patient_case?.triage_confidence ?? "N/A"}</p>
                   </div>
                 </div>
 
@@ -271,137 +223,52 @@ useEffect(() => {
                   <h3 className="mb-3 text-sm font-semibold text-white/80">
                     {isEmergency ? "Emergency Action" : "Appointment Result"}
                   </h3>
-
                   {isEmergency ? (
                     <div className="space-y-3 text-sm text-white/75">
-                      <p>
-                        <span className="text-white/50">Status:</span>{" "}
-                        Immediate escalation required
-                      </p>
-                      <p>
-                        <span className="text-white/50">Recommendation:</span>{" "}
-                        Seek emergency medical attention immediately.
-                      </p>
-                      <p>
-                        <span className="text-white/50">Scheduling:</span>{" "}
-                        Normal appointment scheduling has been bypassed.
-                      </p>
-                      <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-3 text-red-100">
-                        Please go to the nearest emergency department or call emergency services if symptoms worsen.
+                      <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-3 text-red-100 font-medium">
+                        Seek emergency medical attention immediately. Normal scheduling bypassed.
                       </p>
                     </div>
                   ) : appointment ? (
                     <div className="space-y-2 text-sm text-white/75">
-                      <p>
-                        <span className="text-white/50">Department:</span>{" "}
-                        {appointment.department}
-                      </p>
-                      <p>
-                        <span className="text-white/50">Doctor:</span>{" "}
-                        {appointment.doctor || "Not assigned"}
-                      </p>
-                      <p>
-                        <span className="text-white/50">Time:</span>{" "}
-                        {appointment.appointment_time || "Not available"}
-                      </p>
-                      <p>
-                        <span className="text-white/50">Priority:</span>{" "}
-                        {appointment.priority_level}
-                      </p>
-                      <p>
-                        <span className="text-white/50">Status:</span>{" "}
-                        {appointment.status}
-                      </p>
-                      <p>
-                        <span className="text-white/50">Booking Type:</span>{" "}
-                        {appointment.booking_type}
-                      </p>
+                      <p><span className="text-white/50">Department:</span> {appointment.department}</p>
+                      <p><span className="text-white/50">Doctor:</span> {appointment.doctor || "TBD"}</p>
+                      <p><span className="text-white/50">Time:</span> {appointment.appointment_time || "TBD"}</p>
                     </div>
                   ) : (
-                    <p className="text-sm text-white/60">
-                      No appointment result available.
-                    </p>
+                    <p className="text-sm text-white/60">No appointment result available.</p>
                   )}
                 </div>
               </div>
 
-              {!isEmergency && appointment?.instructions && (
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                  <h3 className="mb-2 text-sm font-semibold text-white/80">
-                    Instructions
-                  </h3>
-                  <p className="text-sm text-white/75">
-                    {appointment.instructions}
-                  </p>
-                </div>
-              )}
+              <div className="flex flex-col gap-3 sm:flex-row mt-6">
+                {isEmergency ? (
+                  <button
+                    onClick={() => navigate("/emergency")}
+                    className="flex-1 rounded-2xl bg-red-600 px-5 py-4 font-bold text-white hover:bg-red-500 shadow-glow-emergency transition-all flex items-center justify-center gap-2"
+                  >
+                    <ShieldAlert size={20} />
+                    Go to Emergency Actions
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate("/doctors")}
+                    className="flex-1 rounded-2xl bg-cyan-500 px-5 py-4 font-bold text-slate-950 hover:bg-cyan-400 shadow-glow-primary transition-all flex items-center justify-center gap-2"
+                  >
+                    <CalendarCheck size={20} />
+                    Book Appointment
+                  </button>
+                )}
 
-              {isEmergency && (
-                <div className="rounded-2xl border border-red-400/20 bg-red-500/10 p-5">
-                  <h3 className="mb-2 text-sm font-semibold text-red-100">
-                    Emergency Instructions
-                  </h3>
-                  <p className="text-sm text-red-50">
-                    Do not wait for a routine appointment. Proceed to emergency care immediately and bring any relevant medical documents if available.
-                  </p>
-                </div>
-              )}
-
-              {!isEmergency && appointment?.notification && (
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                  <h3 className="mb-2 text-sm font-semibold text-white/80">
-                    Notification
-                  </h3>
-                  <div className="space-y-2 text-sm text-white/75">
-                    <p>
-                      <span className="text-white/50">Type:</span>{" "}
-                      {appointment.notification.type}
-                    </p>
-                    <p>
-                      <span className="text-white/50">Status:</span>{" "}
-                      {appointment.notification.status}
-                    </p>
-                    <p>{appointment.notification.message}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <h3 className="mb-3 text-sm font-semibold text-white/80">
-                  Workflow Trace
-                </h3>
-                <div className="space-y-2 text-sm text-white/70">
-                  <p>
-                    <span className="text-white/50">Session ID:</span>{" "}
-                    {resultData.session_id}
-                  </p>
-                  <p>
-                    <span className="text-white/50">Current Step:</span>{" "}
-                    {resultData.current_step}
-                  </p>
-                  <p>
-                    <span className="text-white/50">Completed Steps:</span>{" "}
-                    {resultData.completed_steps.join(", ")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
                 <button
-                  onClick={() => navigate("/triage")}
-                  className="rounded-2xl border border-white/10 px-5 py-3 font-medium text-white/80 hover:bg-white/5"
+                  onClick={() => {
+                    setResultData(null);
+                    navigate("/triage");
+                  }}
+                  className="rounded-2xl border border-white/10 px-5 py-4 font-medium text-white/80 hover:bg-white/5 transition-all"
                 >
                   Start New Triage
                 </button>
-
-                {isEmergency && (
-                  <button
-                    onClick={() => navigate("/emergency")}
-                    className="rounded-2xl bg-red-500 px-5 py-3 font-medium text-white hover:bg-red-400"
-                  >
-                    Go to Emergency Actions
-                  </button>
-                )}
               </div>
             </div>
           )}
