@@ -77,8 +77,10 @@ export default function TriageResult() {
   const sessionId = state?.sessionId ?? state?.workflow?.session_id ?? null;
   const API_BASE = "http://localhost:5000/api/workflow";
 
-  useEffect(() => {
-    if (!sessionId || !resultData) {
+useEffect(() => {
+    if (!resultData) return;
+
+    if (!sessionId) {
       navigate("/triage");
       return;
     }
@@ -97,31 +99,22 @@ export default function TriageResult() {
 
         const data: FinalizeResponse = await response.json();
 
-        if (!data.success || !data.data) {
-          setErrorMessage(data.message || "Failed to finalize appointment.");
-          return;
-        }
-
+        if (data.success && data.data) {
         setResultData(data.data);
-      } catch (error) {
-        setErrorMessage("Unable to connect to backend.");
-      } finally {
-        setLoading(false);
+      } else {
+        setErrorMessage(data.message || "Failed to finalize.");
       }
-    };
-
-    if (resultData.current_step === "READY_FOR_SCHEDULING") {
-      finalizeWorkflow();
-    } else if (
-      resultData.current_step === "COMPLETED" ||
-      resultData.current_step === "EMERGENCY_REDIRECTED"
-    ) {
-      setLoading(false);
-    } else {
-      setErrorMessage("Workflow is not ready for final result.");
+    } catch (error) {
+      setErrorMessage("Connection error.");
+    } finally {
       setLoading(false);
     }
-  }, [sessionId, resultData, navigate]);
+  };
+
+  if (resultData.current_step === "READY_FOR_SCHEDULING") {
+      finalizeWorkflow();
+    }
+  }, [sessionId, resultData?.current_step]);
 
   if (!sessionId || !resultData) {
     return null;
@@ -147,7 +140,10 @@ export default function TriageResult() {
     <div className="min-h-screen bg-slate-950 text-white px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <button
-          onClick={() => navigate("/triage")}
+          onClick={() => {
+            setResultData(null); 
+            navigate("/triage");
+          }}
           className="mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-white/80 hover:bg-white/5"
         >
           <ArrowLeft size={16} />
