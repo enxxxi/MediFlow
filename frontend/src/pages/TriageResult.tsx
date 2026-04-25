@@ -78,43 +78,42 @@ export default function TriageResult() {
   const API_BASE = "http://localhost:5000/api/workflow";
 
 useEffect(() => {
-    if (!resultData) return;
+  // 1. Guard against empty data
+  if (!sessionId || !resultData) {
+    navigate("/triage");
+    return;
+  }
 
-    if (!sessionId) {
-      navigate("/triage");
-      return;
-    }
-
+  // 2. ONLY run if we are in the scheduling step and NOT already loading
+  if (resultData.current_step === "READY_FOR_SCHEDULING" && loading) {
     const finalizeWorkflow = async () => {
       try {
-        setLoading(true);
-        setErrorMessage("");
-
         const response = await fetch(`${API_BASE}/finalize/${sessionId}`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         });
 
         const data: FinalizeResponse = await response.json();
 
         if (data.success && data.data) {
-        setResultData(data.data);
-      } else {
-        setErrorMessage(data.message || "Failed to finalize.");
+          setResultData(data.data);
+        } else {
+          setErrorMessage(data.message || "Failed to finalize.");
+        }
+      } catch (error) {
+        setErrorMessage("Connection error.");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setErrorMessage("Connection error.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  if (resultData.current_step === "READY_FOR_SCHEDULING") {
-      finalizeWorkflow();
-    }
-  }, [sessionId, resultData?.current_step]);
+    finalizeWorkflow();
+  } else if (resultData.current_step !== "READY_FOR_SCHEDULING") {
+    // If we've already finalized or are in emergency mode, stop loading
+    setLoading(false);
+  }
+}, [sessionId]); // Remove resultData from here to stop the loop
+
 
   if (!sessionId || !resultData) {
     return null;
