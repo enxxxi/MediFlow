@@ -1,10 +1,12 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
-import workflowRoutes from "./src/routes/workflow.routes.js";
-import agentRoutes from "./src/routes/agent.routes.js";
 
 dotenv.config({ override: true });
+
+const { default: workflowRoutes } = await import("./src/routes/workflow.routes.js");
+const { default: agentRoutes } = await import("./src/routes/agent.routes.js");
+
 const app = express();
 
 app.use(cors());

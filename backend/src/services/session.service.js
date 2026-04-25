@@ -1,47 +1,19 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { db } from "../config/firebase.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Persist local session snapshots in a dedicated directory.
-const SESSIONS_DIR = path.join(__dirname, '../../sessions-data');
+const SESSIONS_COLLECTION = "workflow_sessions";
 
-function ensureSessionsDir() {
-  if (fs.existsSync(SESSIONS_DIR)) {
-    const existingPathStat = fs.statSync(SESSIONS_DIR);
-    if (!existingPathStat.isDirectory()) {
-      throw new Error(`Session path exists but is not a directory: ${SESSIONS_DIR}`);
-    }
-    return;
-  }
-
-  fs.mkdirSync(SESSIONS_DIR, { recursive: true });
-}
-
-function getSessionFilePath(sessionId) {
-  return path.join(SESSIONS_DIR, `${sessionId}.json`);
+function getSessionRef(sessionId) {
+  return db.collection(SESSIONS_COLLECTION).doc(String(sessionId));
 }
 
 export async function getAllSessions() {
   try {
-    ensureSessionsDir();
+    const snapshot = await db
+      .collection(SESSIONS_COLLECTION)
+      .orderBy("created_at", "desc")
+      .get();
 
-    const files = fs
-      .readdirSync(SESSIONS_DIR)
-      .filter((fileName) => fileName.endsWith('.json'));
-
-    const sessions = files
-      .map((fileName) => {
-        const raw = fs.readFileSync(path.join(SESSIONS_DIR, fileName), 'utf8');
-        return JSON.parse(raw);
-      })
-      .sort((a, b) => {
-        const aTime = new Date(a.created_at || 0).getTime();
-        const bTime = new Date(b.created_at || 0).getTime();
-        return bTime - aTime;
-      });
-
-    return sessions;
+    return snapshot.docs.map((doc) => doc.data());
   } catch (error) {
     console.error("Failed to get all sessions:", error.message);
     return [];
@@ -50,44 +22,33 @@ export async function getAllSessions() {
 
 export async function getSessionById(sessionId) {
   try {
-    ensureSessionsDir();
-    const filePath = getSessionFilePath(sessionId);
-
-    if (!fs.existsSync(filePath)) return null;
-
-    const raw = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(raw);
+    const snapshot = await getSessionRef(sessionId).get();
+    return snapshot.exists ? snapshot.data() : null;
   } catch (error) {
     console.error("Failed to get session by id:", error.message);
     return null;
   }
 }
 
-export const saveSession = async (session) => {
+export async function saveSession(session) {
   try {
-    ensureSessionsDir();
-
-    const filePath = path.join(SESSIONS_DIR, `${session.session_id}.json`);
-    
-    fs.writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf8');
-    console.log(`✅ Session saved: ${session.session_id}`);
-    
+    await getSessionRef(session.session_id).set(session);
+    console.log(`Session saved: ${session.session_id}`);
     return session;
   } catch (error) {
-    console.error("❌ Critical Save Error:", error);
+    console.error("Critical save error:", error);
     throw new Error("Unable to save session data");
   }
-};
+}
 
 export async function updateSession(sessionId, updatedData) {
   try {
-    ensureSessionsDir();
-    const filePath = getSessionFilePath(sessionId);
+    const ref = getSessionRef(sessionId);
+    const snapshot = await ref.get();
 
-    if (!fs.existsSync(filePath)) return null;
+    if (!snapshot.exists) return null;
 
-    const currentSession = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-
+    const currentSession = snapshot.data();
     const mergedSession = {
       ...currentSession,
       ...updatedData,
@@ -95,7 +56,7 @@ export async function updateSession(sessionId, updatedData) {
       updated_at: new Date().toISOString(),
     };
 
-    fs.writeFileSync(filePath, JSON.stringify(mergedSession, null, 2), 'utf8');
+    await ref.set(mergedSession);
     return mergedSession;
   } catch (error) {
     console.error("Failed to update session:", error.message);

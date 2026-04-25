@@ -1,19 +1,47 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LogIn, UserPlus, Mail, Lock, ArrowRight } from "lucide-react";
+import { LogIn, UserPlus, Mail, Lock } from "lucide-react";
+import { FirebaseError } from "firebase/app";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading, login, signup } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // simulate a successful login for now 
-    localStorage.setItem("isAuthenticated", "true");
-    navigate("/");
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      if (isLogin) {
+        await login(email, password);
+      } else {
+        await signup(email, password);
+      }
+
+      navigate("/", { replace: true });
+    } catch (err) {
+      if (err instanceof FirebaseError) {
+        setError(err.message);
+      } else {
+        setError("Authentication failed. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -57,6 +85,7 @@ export default function Login() {
                 <input
                   type="password"
                   required
+                  minLength={6}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-900 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white focus:border-cyan-400 outline-none transition-all"
@@ -65,12 +94,23 @@ export default function Login() {
               </div>
             </div>
 
+            {error ? (
+              <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3">
+                {error}
+              </p>
+            ) : null}
+
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all mt-4"
             >
               {isLogin ? <LogIn size={20} /> : <UserPlus size={20} />}
-              {isLogin ? "Sign In" : "Create Account"}
+              {isSubmitting
+                ? "Please wait..."
+                : isLogin
+                  ? "Sign In"
+                  : "Create Account"}
             </button>
           </form>
 

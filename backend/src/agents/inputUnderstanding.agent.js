@@ -118,6 +118,7 @@ export async function processMedicalInput(rawText) {
     // 1. CONFIGURATION
     const ZAI_ENDPOINT = process.env.ZAI_ENDPOINT?.trim() || "https://api.ilmu.ai/v1/chat/completions";
     const ZAI_API_KEY = process.env.ZAI_API_KEY?.trim();
+    const ZAI_TIMEOUT_MS = Number(process.env.ZAI_TIMEOUT_MS || 30000);
 
     // 2. FALLBACK LOGIC
     if (!ZAI_API_KEY || zAIAuthDisabled) {
@@ -169,7 +170,7 @@ export async function processMedicalInput(rawText) {
     // 4. API EXECUTION & PARSING
     try {
         const response = await axios.post(ZAI_ENDPOINT, requestBody, {
-            timeout: 10000,
+            timeout: ZAI_TIMEOUT_MS,
             headers: {
               Authorization: `Bearer ${ZAI_API_KEY}`,
               "Content-Type": "application/json",

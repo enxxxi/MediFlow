@@ -1,16 +1,18 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Stethoscope, CalendarDays, AlertTriangle, LogOut } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.1 } } };
 const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated"); 
-    navigate("/login"); 
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
   };
 
   return (

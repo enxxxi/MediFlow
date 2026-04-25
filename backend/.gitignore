@@ -70,3 +70,8 @@ node_modules/
 
 backend/sessions-data/
 backend/.env
+
+# Agent / Claude generated skill caches
+.agents/
+.claude/
+skills-lock.json
