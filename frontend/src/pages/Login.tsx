@@ -11,8 +11,7 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, we simulate a successful login
-    // In a real system, you would verify email/password with your Node.js backend
+    // simulate a successful login for now 
     localStorage.setItem("isAuthenticated", "true");
     navigate("/");
   };

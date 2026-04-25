@@ -151,7 +151,6 @@ export default function Triage() {
       } else if (workflow.current_step === "READY_FOR_SCHEDULING") {
   toast.success("Triage complete! Redirecting...", { id: toastId });
 
-  // Use replace: true so the user can't accidentally "Back" into a loading state
   setTimeout(() => {
     navigate("/triage-result", {
       replace: true, 
@@ -191,7 +190,7 @@ export default function Triage() {
     <div className="min-h-screen bg-slate-950 text-white px-4 py-8">
       <div className="mx-auto max-w-3xl">
       <button
-          onClick={() => navigate("/")} // Change this to Home
+          onClick={() => navigate("/")} 
           className="mb-6 inline-flex items-center gap-2 ..."
       >
           <ArrowLeft size={16} />

@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
 
-// Import your pages
 import Login from "./pages/Login";
 import Landing from "./pages/Landing";
 import Triage from "./pages/Triage";
@@ -18,7 +17,6 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// A simple helper component to protect your routes
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
   
