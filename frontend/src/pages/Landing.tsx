@@ -1,12 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Stethoscope, CalendarDays, AlertTriangle } from 'lucide-react';
+import { Stethoscope, CalendarDays, AlertTriangle, LogOut } from 'lucide-react';
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.1 } } };
 const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } };
 
 export default function Landing() {
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAuthenticated"); // Remove the login flag
+    navigate("/login"); // Send user back to login page
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -17,10 +22,21 @@ export default function Landing() {
           <div className="absolute bottom-12 left-6 w-20 h-20 rounded-full border border-primary-foreground/20 animate-float" />
         </div>
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10">
-          <div className="flex items-center gap-3 mb-6">
-            <img src="/favicon.png" alt="MediFlow" className="w-12 h-12 rounded-lg" />
-            <span className="text-3xl font-bold text-white tracking-tight">MediFlow</span>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <img src="/favicon.png" alt="MediFlow" className="w-12 h-12 rounded-lg" />
+              <span className="text-3xl font-bold text-white tracking-tight">MediFlow</span>
+            </div>
+
+            <button 
+              onClick={handleLogout}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+              title="Logout"
+            >
+              <LogOut size={20} />
+            </button>
           </div>
+
           <h1 className="text-3xl font-extrabold text-white leading-tight">
             Smart Health<br />Triage & Booking
           </h1>
