@@ -121,7 +121,6 @@ export default function TriageResult() {
 
   const isEmergency =
     triageLevel === "EMERGENCY" ||
-    triageLevel === "URGENT" || //remove this later
     resultData.current_step === "EMERGENCY_REDIRECTED";
 
   const symptoms = resultData.patient_case?.symptoms || [];
