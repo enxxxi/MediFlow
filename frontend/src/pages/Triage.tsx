@@ -164,6 +164,17 @@ export default function Triage() {
 } else if (workflow.current_step === "EMERGENCY_REDIRECTED") {
         toast.success("Emergency case identified.", { id: toastId });
         setCurrentQuestion(null);
+
+        setTimeout(() => {
+          navigate("/triage-result", {
+            replace: true, 
+            state: {
+              sessionId: workflow.session_id,
+              workflow: workflow,
+            },
+          });
+        }, 500);
+
       }
     } catch (error: any) {
       console.error("Workflow Connection Error:", error);

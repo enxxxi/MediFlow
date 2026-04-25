@@ -118,7 +118,7 @@ export async function processMedicalInput(rawText) {
     // 1. CONFIGURATION
     const ZAI_ENDPOINT = process.env.ZAI_ENDPOINT?.trim() || "https://api.ilmu.ai/v1/chat/completions";
     const ZAI_API_KEY = process.env.ZAI_API_KEY?.trim();
-    const ZAI_TIMEOUT_MS = Number(process.env.ZAI_TIMEOUT_MS || 30000);
+    const ZAI_TIMEOUT_MS = Number(process.env.ZAI_TIMEOUT_MS || 60000);
 
     // 2. FALLBACK LOGIC
     if (!ZAI_API_KEY || zAIAuthDisabled) {

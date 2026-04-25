@@ -57,7 +57,7 @@ function enforceClinicalSafety(result, patientCase = {}) {
   const symptoms = getSymptoms(patientCase);
   const severity = hasValidSeverity(patientCase) ? Number(patientCase.severity) : null;
 
-  if (symptoms.includes("chest pain") && symptoms.includes("dizziness")) {
+if (symptoms.includes("chest pain") && symptoms.includes("dizziness")) {
     return {
       ...result,
       triage_level: "EMERGENCY",
@@ -67,6 +67,20 @@ function enforceClinicalSafety(result, patientCase = {}) {
         "Chest pain with dizziness is treated as an emergency because it may indicate a serious cardiovascular issue.",
     };
   }
+  
+    if (symptoms.includes("chest pain")) {
+      return {
+      ...result,
+      triage_level: "EMERGENCY",
+      risk_score: Math.max(Number(result.risk_score || 0), 90),
+      confidence: Math.max(Number(result.confidence || 0), 0.95),
+      reasoning:
+        "Chest pain is treated as an emergency because it may indicate a serious cardiovascular issue.",
+      };
+    }
+
+
+  
 
   if (symptoms.includes("shortness of breath")) {
     return {
@@ -321,11 +335,24 @@ ${severityInstruction}`,
 }
 
 export async function runTriageAgent(patientCase = {}) {
-  const ruleResult = ruleBasedEmergencyCheck(patientCase);
-  if (ruleResult) return ruleResult;
+  const symptoms = getSymptoms(patientCase);
 
+  const hasEmergencyRedFlag =
+    symptoms.includes("chest pain") ||
+    symptoms.includes("shortness of breath") ||
+    symptoms.includes("seizure") ||
+    String(patientCase.raw_input || "").toLowerCase().includes("unconscious");
+
+  // Emergency cases: rule-based safety first
+  if (hasEmergencyRedFlag) {
+    const ruleResult = ruleBasedEmergencyCheck(patientCase);
+    if (ruleResult) return ruleResult;
+  }
+
+  // Non-emergency cases: GLM reasoning first
   const glmResult = await runGLMTriage(patientCase);
   if (glmResult) return glmResult;
 
+  // Backup only if GLM fails
   return fallbackTriage(patientCase);
 }
