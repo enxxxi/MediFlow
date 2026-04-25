@@ -66,7 +66,7 @@ export default function Landing() {
           </div>
           <div className="text-left">
             <h3 className="font-bold text-foreground group-hover:text-secondary transition-colors">My Appointments</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">View, reschedule, or cancel</p>
+            <p className="text-xs text-muted-foreground mt-0.5">View appointments</p>
           </div>
         </motion.button>
 
