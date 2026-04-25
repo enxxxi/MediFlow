@@ -4,6 +4,12 @@ MediFlow is an AI-assisted medical triage and appointment scheduling web applica
 
 The project combines a React frontend, an Express backend, Firebase authentication, Firestore-based workflow sessions, and an AI-powered symptom understanding and triage pipeline.
 
+## Presentation Slide Link
+https://canva.link/mediflow-fsktmhack
+
+## Presentation + Demo Video Link
+https://drive.google.com/drive/folders/1fk2ubZYBwDYHPD1Du0CBAydHk5_UIDgQ?usp=drive_link
+
 ## Features
 
 - Natural-language symptom input for patients
@@ -83,8 +89,8 @@ MediFlow/
 
 If you just want to test MediFlow without local setup, use the deployed app:
 
-- Frontend: `https://mediflow-delta.vercel.app/`
-- Backend: `https://mediflow-526a.onrender.com`
+- Frontend: `https://medi-flow-fsktmhack.vercel.app/`
+- Backend: `https://mediflow-bw8n.onrender.com/`
 
 Open the frontend URL in your browser, sign up or log in, then start a triage session.
 
