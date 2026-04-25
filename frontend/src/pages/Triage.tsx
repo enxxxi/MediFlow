@@ -149,18 +149,20 @@ export default function Triage() {
         setCurrentQuestion(workflow.next_question || workflow.last_question || null);
         toast.success("Details updated. One more thing...", { id: toastId });
       } else if (workflow.current_step === "READY_FOR_SCHEDULING") {
-        toast.success("Triage complete! Redirecting...", { id: toastId });
+  toast.success("Triage complete! Redirecting...", { id: toastId });
 
-        setTimeout(() => {
-          navigate("/triage-result", {
-            state: {
-              sessionId: workflow.session_id,
-              workflow: workflow,
-              patientCase: workflow.patient_case,
-            },
-          });
-        }, 500);
-      } else if (workflow.current_step === "EMERGENCY_REDIRECTED") {
+  // Use replace: true so the user can't accidentally "Back" into a loading state
+  setTimeout(() => {
+    navigate("/triage-result", {
+      replace: true, 
+      state: {
+        sessionId: workflow.session_id,
+        workflow: workflow,
+        patientCase: workflow.patient_case,
+      },
+    });
+  }, 500);
+} else if (workflow.current_step === "EMERGENCY_REDIRECTED") {
         toast.success("Emergency case identified.", { id: toastId });
         setCurrentQuestion(null);
       }
@@ -188,13 +190,13 @@ export default function Triage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white px-4 py-8">
       <div className="mx-auto max-w-3xl">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-6 inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-white/80 hover:bg-white/5"
-        >
+      <button
+          onClick={() => navigate("/")} // Change this to Home
+          className="mb-6 inline-flex items-center gap-2 ..."
+      >
           <ArrowLeft size={16} />
-          Back
-        </button>
+          Back to Home
+      </button>
 
         <motion.div
           initial={{ opacity: 0, y: 18 }}
