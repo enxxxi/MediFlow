@@ -9,8 +9,8 @@ export default function Landing() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated"); // Remove the login flag
-    navigate("/login"); // Send user back to login page
+    localStorage.removeItem("isAuthenticated"); 
+    navigate("/login"); 
   };
 
   return (

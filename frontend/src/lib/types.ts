@@ -17,6 +17,7 @@ export interface Doctor {
   nextAvailable: string;
   slots: string[];
   hospital: string;
+  address?: string;
 }
 
 export interface Appointment {
@@ -27,6 +28,7 @@ export interface Appointment {
   urgency: UrgencyLevel;
   symptoms: string[];
   status: 'upcoming' | 'completed' | 'cancelled';
+  purpose?: string;
 }
 
 export interface MedicalCase {

@@ -154,16 +154,16 @@ export default function Emergency() {
           <div className="flex flex-col gap-2.5">
             {hospitals.map((h, i) => (
               <button key={i} onClick={() => openMaps(h)}
-                className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-accent transition-colors text-left group">
+                className="flex items-center justify-between p-3 rounded-xl bg-muted/50 bg-muted/50 transition-colors text-left group hover:bg-white hover:text-black">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-foreground truncate">{h.name}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
+                  <p className="text-sm font-semibold text-foreground truncate group-hover:text-black">{h.name}</p>
+                  <p className="text-xs text-muted-foreground capitalize group-hover:text-black/70">
                     {h.type} · {h.distance < 1 ? `${Math.round(h.distance * 1000)}m` : `${h.distance.toFixed(1)} km`} away
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-2">
-                  <span className="text-xs font-bold text-primary bg-accent px-2.5 py-1 rounded-lg">{estimateEta(h.distance)}</span>
-                  <Navigation className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span className="text-xs font-bold text-primary bg-accent px-2.5 py-1 rounded-lg group-hover:text-black">{estimateEta(h.distance)}</span>
+                  <Navigation className="w-3.5 h-3.5 text-muted-foreground group-hover:text-black transition-colors" />
                 </div>
               </button>
             ))}

@@ -128,7 +128,7 @@ export const mockAppointments: Appointment[] = [
     urgency: 'non-urgent',
     symptoms: ['Chest tightness'],
     status: 'completed',
-    purpose: 'Routine EKG and heart rate monitoring', // New
+    purpose: 'Routine EKG and heart rate monitoring', 
   }
 ];
 

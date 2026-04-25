@@ -63,7 +63,7 @@ export default function Appointments() {
         </div>
       </div>
 
-      {/* DETAIL MODAL (The Interactive Part) */}
+      {/* DETAIL MODAL */}
       <AnimatePresence>
         {selectedApt && (
           <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4 bg-slate-950/80 backdrop-blur-sm">
