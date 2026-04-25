@@ -4,6 +4,8 @@ import cors from "cors";
 
 dotenv.config({ override: true });
 
+await import("./src/config/firebase.js");
+
 const { default: workflowRoutes } = await import("./src/routes/workflow.routes.js");
 const { default: agentRoutes } = await import("./src/routes/agent.routes.js");
 

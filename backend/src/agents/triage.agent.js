@@ -6,6 +6,113 @@ function cleanJsonText(text = "") {
   return String(text || "").replace(/```json|```/g, "").trim();
 }
 
+function extractBalancedJsonObject(text = "") {
+  const cleaned = cleanJsonText(text);
+  const start = cleaned.indexOf("{");
+
+  if (start === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = start; index < cleaned.length; index += 1) {
+    const char = cleaned[index];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+
+      if (char === "\"") {
+        inString = false;
+      }
+
+      continue;
+    }
+
+    if (char === "\"") {
+      inString = true;
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return cleaned.slice(start, index + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+function readStringField(text = "", fieldName) {
+  const match = String(text || "").match(
+    new RegExp(`"${fieldName}"\\s*:\\s*"([\\s\\S]*?)(?:"\\s*,|"$)`)
+  );
+
+  return match ? match[1].trim() : "";
+}
+
+function readNumberField(text = "", fieldName) {
+  const match = String(text || "").match(
+    new RegExp(`"${fieldName}"\\s*:\\s*(-?\\d+(?:\\.\\d+)?)`)
+  );
+
+  return match ? Number(match[1]) : undefined;
+}
+
+function salvageTriageJson(text = "", patientCase = {}) {
+  const triageLevel = normalizeTriageLevel(readStringField(text, "triage_level"));
+  const riskScore = clampNumber(readNumberField(text, "risk_score"), 30, 1, 100);
+  const confidence = clampNumber(readNumberField(text, "confidence"), 0.75, 0.1, 1);
+  const reasoning =
+    readStringField(text, "reasoning") || buildBackupReasoning(patientCase, triageLevel);
+
+  return {
+    triage_level: triageLevel,
+    risk_score: riskScore,
+    confidence,
+    reasoning,
+    source: "glm-salvaged",
+  };
+}
+
+function parseGLMTriageContent(aiContent = "", patientCase = {}) {
+  const balancedJson = extractBalancedJsonObject(aiContent);
+
+  if (balancedJson) {
+    return JSON.parse(balancedJson);
+  }
+
+  const cleaned = cleanJsonText(aiContent);
+  const hasTriageFields =
+    cleaned.includes("\"triage_level\"") ||
+    cleaned.includes("\"risk_score\"") ||
+    cleaned.includes("\"confidence\"") ||
+    cleaned.includes("\"reasoning\"");
+
+  if (!hasTriageFields) {
+    throw new Error("No JSON object found in GLM response");
+  }
+
+  return salvageTriageJson(cleaned, patientCase);
+}
+
 function normalizeTriageLevel(value) {
   const level = String(value || "").toUpperCase().trim();
   if (["EMERGENCY", "URGENT", "NON-URGENT"].includes(level)) return level;
@@ -216,7 +323,7 @@ async function runGLMTriage(patientCase = {}) {
   const ZAI_ENDPOINT =
     process.env.ZAI_ENDPOINT?.trim() || "https://api.z-ai.com/v1/chat/completions";
   const ZAI_API_KEY = process.env.ZAI_API_KEY?.trim();
-  const ZAI_TIMEOUT_MS = Number(process.env.ZAI_TIMEOUT_MS || 30000);
+  const ZAI_TIMEOUT_MS = Number(process.env.ZAI_TIMEOUT_MS || 60000);
 
   if (!ZAI_API_KEY || zAITriageAuthDisabled) {
     return null;
@@ -286,14 +393,7 @@ ${severityInstruction}`,
 
     let parsed = {};
     try {
-      const cleaned = cleanJsonText(aiContent);
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-
-      if (!jsonMatch) {
-        throw new Error("No JSON object found in GLM response");
-      }
-
-      parsed = JSON.parse(jsonMatch[0]);
+      parsed = parseGLMTriageContent(aiContent, patientCase);
     } catch (parseError) {
       console.error("❌ GLM JSON parse failed:", parseError.message);
       console.error("❌ Raw GLM content was:", aiContent);

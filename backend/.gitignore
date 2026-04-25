@@ -75,3 +75,6 @@ backend/.env
 .agents/
 .claude/
 skills-lock.json
+
+
+*serviceAccountKey.json
